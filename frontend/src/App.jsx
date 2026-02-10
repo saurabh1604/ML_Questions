@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import ScatterPlot from './components/ScatterPlot';
 import TreeDiagram from './components/TreeDiagram';
-import MathPanel from './components/MathPanel';
+import StepByStepMath from './components/StepByStepMath';
 import { fetchDataset, trainTree, trainForest, trainBoosting } from './api';
-import * as d3 from 'd3'; // Import d3 to calculate extent
+import * as d3 from 'd3';
 
 function App() {
     const [datasetType, setDatasetType] = useState('moons');
@@ -15,7 +15,7 @@ function App() {
     const [params, setParams] = useState({
         max_depth: 3,
         min_samples_split: 2,
-        criterion: 'gini', // or 'mse'
+        criterion: 'gini',
         n_estimators: 10,
         learning_rate: 0.1
     });
@@ -29,14 +29,14 @@ function App() {
     // Initial load
     useEffect(() => {
         handleGenerateData();
-    }, []); // Run once on mount
+    }, []);
 
     const handleGenerateData = async () => {
         setLoading(true);
         try {
             const points = await fetchDataset(datasetType, 300, noise);
             setData(points);
-            setModelResult(null); // Clear previous model
+            setModelResult(null);
             setSelectedNode(null);
         } catch (err) {
             setError("Failed to fetch data: " + err.message);
@@ -54,7 +54,6 @@ function App() {
         try {
             let result;
             const task = datasetType === 'regression' ? 'regression' : 'classification';
-            // Adjust criterion for regression if needed
             let currentParams = { ...params, task };
 
             if (algoType === 'tree') {
@@ -72,7 +71,6 @@ function App() {
         }
     };
 
-    // Calculate Data Domain for Tree Recursion
     const getDataDomain = () => {
         if (!data || data.length === 0) return null;
         const xExtent = d3.extent(data, d => d.x);
@@ -88,7 +86,7 @@ function App() {
     const dataDomain = getDataDomain();
 
     return (
-        <div className="flex h-screen bg-gray-50 font-sans">
+        <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
             <Sidebar
                 datasetType={datasetType} setDatasetType={setDatasetType}
                 noise={noise} setNoise={setNoise}
@@ -98,78 +96,99 @@ function App() {
                 onTrain={handleTrain}
             />
 
-            <main className="flex-1 p-6 flex flex-col gap-6 overflow-hidden">
-                <div className="flex justify-between items-center shrink-0">
-                    <h2 className="text-2xl font-bold text-gray-800">
-                        {algoType === 'tree' ? 'Decision Tree' :
-                         algoType === 'forest' ? 'Random Forest' : 'Gradient Boosting'}
-                        Visualization
-                    </h2>
-                    {loading && <span className="text-blue-500 font-semibold animate-pulse">Processing...</span>}
-                    {error && <span className="text-red-500 font-semibold">{error}</span>}
-                </div>
-
-                <div className="flex flex-1 gap-6 min-h-0">
-                    {/* Scatter Plot - Fixed width/height or responsive? Fixed for D3 simplicity */}
-                    <div className="flex-none">
-                        <ScatterPlot
-                            data={data}
-                            boundaries={modelResult?.boundaries} // Only for tree
-                            boundaryGrid={modelResult?.boundary_grid} // For forest/boosting
-                            task={datasetType === 'regression' ? 'regression' : 'classification'}
-                            width={500}
-                            height={500}
-                            selectedRegionId={null} // We pass selectedNode.region instead
-                            selectedRegion={selectedNode?.region}
-                        />
-                        {modelResult && (
-                             <div className="mt-2 text-center text-sm font-semibold text-gray-600">
-                                Model Score: {modelResult.score?.toFixed(4)}
-                             </div>
-                        )}
+            <main className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto h-full scroll-smooth">
+                {/* Header Stats */}
+                <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-100 shrink-0">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800">
+                            {algoType === 'tree' ? 'Decision Tree' :
+                             algoType === 'forest' ? 'Random Forest' : 'Gradient Boosting'}
+                        </h2>
+                        <p className="text-sm text-slate-500">
+                            Task: <span className="font-semibold uppercase text-slate-700">{datasetType === 'regression' ? 'Regression' : 'Classification'}</span>
+                        </p>
                     </div>
-
-                    {/* Tree Viz or List of Trees */}
-                    <div className="flex-1 bg-white rounded shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-                        {modelResult && algoType === 'tree' ? (
-                            <TreeDiagram
-                                structure={modelResult.structure}
-                                width={800} // Make it wider? Or responsive?
-                                height={500}
-                                onNodeClick={setSelectedNode}
-                                selectedNode={selectedNode}
-                                dataDomain={dataDomain}
-                            />
-                        ) : modelResult && (algoType === 'forest' || algoType === 'boosting') ? (
-                             <div className="p-4 overflow-auto h-full">
-                                <h3 className="font-bold mb-2">Ensemble Trees (First 3)</h3>
-                                <div className="flex flex-col gap-4">
-                                    {modelResult.trees.map((tree, idx) => (
-                                        <div key={idx} className="border p-2 rounded">
-                                            <p className="font-semibold text-sm mb-1">Tree #{idx + 1}</p>
-                                            <TreeDiagram
-                                                structure={tree}
-                                                width={600}
-                                                height={300}
-                                                onNodeClick={setSelectedNode}
-                                                selectedNode={selectedNode}
-                                                dataDomain={dataDomain}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                             </div>
-                        ) : (
-                            <div className="h-full flex items-center justify-center text-gray-400">
-                                Train a model to see results
+                    <div className="flex items-center gap-4">
+                        {loading && <span className="text-indigo-600 font-medium animate-pulse">Running...</span>}
+                        {error && <span className="text-rose-500 font-semibold text-sm bg-rose-50 px-3 py-1 rounded-full">{error}</span>}
+                        {modelResult && (
+                            <div className="text-right">
+                                <p className="text-xs text-slate-400 uppercase tracking-wider">Model Score</p>
+                                <p className="text-2xl font-bold text-emerald-600">{modelResult.score?.toFixed(4)}</p>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Math Panel */}
-                <div className="h-64 shrink-0 bg-white p-4 rounded shadow border-t border-gray-200 overflow-hidden">
-                    <MathPanel selectedNode={selectedNode} />
+                {/* Visualizations Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[500px]">
+                    {/* Scatter Plot */}
+                    <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+                            <h3 className="font-semibold text-slate-700">Feature Space</h3>
+                            <span className="text-xs text-slate-400">Interactive Visualization</span>
+                        </div>
+                        <div className="flex-1 relative min-h-[400px] flex items-center justify-center bg-slate-50 rounded-b-xl overflow-hidden">
+                             {/* Container for ScatterPlot. We pass a key to force re-render if needed, but resizing is better. */}
+                            <ScatterPlot
+                                data={data}
+                                boundaries={modelResult?.boundaries}
+                                boundaryGrid={modelResult?.boundary_grid}
+                                task={datasetType === 'regression' ? 'regression' : 'classification'}
+                                width={500} // Temporary fixed
+                                height={400} // Temporary fixed
+                                selectedRegion={selectedNode?.region}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Tree Viz */}
+                    <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+                            <h3 className="font-semibold text-slate-700">Model Structure</h3>
+                            <span className="text-xs text-slate-400">
+                                {algoType === 'tree' ? 'Click nodes to inspect' : 'Ensemble Preview'}
+                            </span>
+                        </div>
+                        <div className="flex-1 overflow-auto bg-slate-50 rounded-b-xl min-h-[400px] flex items-center justify-center">
+                            {modelResult && algoType === 'tree' ? (
+                                <TreeDiagram
+                                    structure={modelResult.structure}
+                                    task={datasetType === 'regression' ? 'regression' : 'classification'}
+                                    onNodeClick={setSelectedNode}
+                                    selectedNode={selectedNode}
+                                    dataDomain={dataDomain}
+                                />
+                            ) : modelResult && (algoType === 'forest' || algoType === 'boosting') ? (
+                                 <div className="p-6 grid gap-6 w-full">
+                                    {modelResult.trees.map((tree, idx) => (
+                                        <div key={idx} className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+                                            <p className="font-bold text-xs text-slate-400 mb-2 uppercase">Estimator #{idx + 1}</p>
+                                            <div className="overflow-auto flex justify-center min-h-[300px]">
+                                                <TreeDiagram
+                                                    structure={tree}
+                                                    task={datasetType === 'regression' ? 'regression' : 'classification'}
+                                                    onNodeClick={setSelectedNode}
+                                                    selectedNode={selectedNode}
+                                                    dataDomain={dataDomain}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-slate-400 flex flex-col items-center gap-2">
+                                    <span className="text-4xl">🌲</span>
+                                    <p>Train a model to see its structure</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Step-by-Step Math Panel */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden shrink-0 h-[400px]">
+                    <StepByStepMath selectedNode={selectedNode} />
                 </div>
             </main>
         </div>

@@ -9,10 +9,61 @@ def tree_to_json(clf, feature_names=None):
     tree_ = clf.tree_
     feature_names = feature_names or [f"Feature {i}" for i in range(tree_.n_features)]
 
+    # Determine criterion to provide correct math context
+    criterion = getattr(clf, "criterion", "gini") # Default to gini if not found
+
     def recurse(node):
         impurity = float(tree_.impurity[node])
         n_samples = int(tree_.n_node_samples[node])
-        value = tree_.value[node][0].tolist() # value is shape (n_nodes, 1, n_classes) for classifier
+        # value is shape (n_nodes, 1, n_classes) for classifier, (n_nodes, 1, 1) for regressor
+        value = tree_.value[node][0]
+        value_list = value.tolist()
+
+        # Calculate step-by-step math details
+        math_details = {
+            "criterion": criterion,
+            "impurity": impurity,
+            "n_samples": n_samples,
+            "value": value_list
+        }
+
+        if len(value) > 1: # Classification
+            # Calculate probabilities robustly (value might be counts or normalized)
+            # value sum should be n_samples (if unweighted) or 1.0 (if normalized)
+            # Safe way: value / sum(value)
+            val_sum = np.sum(value)
+            if val_sum > 0:
+                probs_array = value / val_sum
+            else:
+                probs_array = np.zeros_like(value)
+
+            probs = probs_array.tolist()
+            math_details["probs"] = probs
+            # Estimate counts based on n_samples (since value might be normalized)
+            # Rounding to nearest integer for display clarity if close
+            counts = (probs_array * n_samples).tolist()
+            math_details["class_counts"] = counts
+
+            if criterion == "gini":
+                # Gini = 1 - sum(p^2)
+                terms = [(p**2) for p in probs]
+                math_details["terms"] = terms
+                math_details["formula"] = "1 - sum(p^2)"
+            elif criterion == "entropy" or criterion == "log_loss":
+                # Entropy = -sum(p * log2(p))
+                # Avoid log(0)
+                terms = [-p * np.log2(p) if p > 0 else 0.0 for p in probs]
+                math_details["terms"] = terms
+                math_details["formula"] = "-sum(p * log2(p))"
+        else: # Regression
+            # Value is mean (or sum, but usually mean in predict)
+            # Actually tree_.value for regression is the sum of targets in the node?
+            # No, for DecisionTreeRegressor, it's the mean * n_samples (sum) if it's weighted?
+            # Let's check sklearn docs or experiment.
+            # Usually tree_.value[node] contains the stored value. For standard MSE, it is the mean.
+            # Wait, let's verify.
+            # In sklearn implementation, for MSE, value stored is indeed the mean prediction for the node.
+            pass
 
         # Check if leaf
         if tree_.feature[node] != _tree.TREE_UNDEFINED:
@@ -33,7 +84,9 @@ def tree_to_json(clf, feature_names=None):
             imp_left = left_data['impurity']
             imp_right = right_data['impurity']
 
-            gain = impurity - ((n_left / n_samples) * imp_left + (n_right / n_samples) * imp_right)
+            weighted_imp_left = (n_left / n_samples) * imp_left
+            weighted_imp_right = (n_right / n_samples) * imp_right
+            gain = impurity - (weighted_imp_left + weighted_imp_right)
 
             return {
                 "name": name,
@@ -41,35 +94,27 @@ def tree_to_json(clf, feature_names=None):
                 "threshold": threshold,
                 "impurity": impurity,
                 "samples": n_samples,
-                "value": value,
+                "value": value_list,
                 "gain": float(gain),
                 "type": "split",
+                "math": math_details,
                 "children": [left_data, right_data]
-                # using 'children' list for d3-hierarchy compatibility usually,
-                # but 'left'/'right' is more explicit for binary trees.
-                # Let's use 'children' [left, right] to make D3 happy by default,
-                # but I'll also keep 'left'/'right' keys if needed or just rely on index 0/1.
             }
         else:
             return {
                 "name": "Leaf",
                 "impurity": impurity,
                 "samples": n_samples,
-                "value": value,
-                "type": "leaf"
+                "value": value_list,
+                "type": "leaf",
+                "math": math_details
             }
 
     return recurse(0)
 
 def get_decision_boundaries(clf, x_min, x_max, y_min, y_max, step=0.05):
     """
-    Generates a grid of predictions for visualizing decision boundaries.
-    Returns a list of polygons or just the grid?
-    Grid is easier for heatmap-style background.
-    Polygons (rectangles) are better for 'recursive partitioning' visualization.
-
-    Let's extract rectangles!
-    We can traverse the tree and define the bounds for each leaf.
+    Generates a list of rectangular regions defining the decision boundaries.
     """
     tree_ = clf.tree_
     rectangles = []
