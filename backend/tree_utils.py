@@ -11,6 +11,8 @@ def tree_to_json(clf, feature_names=None):
 
     # Determine criterion to provide correct math context
     criterion = getattr(clf, "criterion", "gini") # Default to gini if not found
+    if criterion == "squared_error":
+        criterion = "mse"
 
     def recurse(node):
         impurity = float(tree_.impurity[node])
