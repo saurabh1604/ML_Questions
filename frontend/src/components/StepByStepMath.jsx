@@ -1,13 +1,15 @@
 import React from 'react';
-import { Calculator, ArrowRight, GitCommit, ChevronRight, Hash } from 'lucide-react';
+import { Calculator, ArrowRight, GitCommit, ChevronRight, Hash, Activity } from 'lucide-react';
 
 const StepByStepMath = ({ selectedNode }) => {
     if (!selectedNode) {
         return (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-slate-50/50">
-                <Calculator className="w-12 h-12 mb-3 opacity-20" />
-                <h3 className="text-lg font-medium text-slate-600">No Node Selected</h3>
-                <p className="text-sm">Click on a node in the tree diagram to see the mathematical breakdown of the split.</p>
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-slate-50/30">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <Activity className="w-8 h-8 text-slate-300" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-600">Select a Node</h3>
+                <p className="text-sm text-slate-400 max-w-xs">Click on any node in the tree diagram above to reveal the detailed mathematical breakdown of that specific split.</p>
             </div>
         );
     }
@@ -18,82 +20,105 @@ const StepByStepMath = ({ selectedNode }) => {
         math
     } = selectedNode;
 
+    // Safety check for math object
+    const safeMath = math || { probs: [], class_counts: [], terms: [] };
+
     const isLeaf = !children || children.length === 0;
-    const criterion = math?.criterion || 'gini';
+    const criterion = safeMath.criterion || 'gini';
     const impurityName = criterion === 'mse' ? 'MSE' : criterion.charAt(0).toUpperCase() + criterion.slice(1);
 
-    // Helper to format numbers
     const fmt = (n) => typeof n === 'number' ? n.toFixed(4) : n;
-
-    // Helper to render formula
-    const renderImpurityFormula = () => {
-        if (criterion === 'gini') return <span>1 - &Sigma; p<sub>i</sub><sup>2</sup></span>;
-        if (criterion === 'entropy') return <span>- &Sigma; p<sub>i</sub> log<sub>2</sub>(p<sub>i</sub>)</span>;
-        if (criterion === 'mse') return <span>&frac{1}{N} &Sigma; (y<sub>i</sub> - &#x0233;)<sup>2</sup></span>;
-        return <span>Impurity</span>;
-    };
 
     return (
         <div className="h-full flex flex-col bg-white">
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-lg ${isLeaf ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
-                        <GitCommit className="w-4 h-4" />
+            {/* Header */}
+            <div className="p-5 border-b border-slate-100 flex justify-between items-start bg-white shrink-0">
+                <div className="flex items-start gap-3">
+                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg mt-0.5">
+                        <Activity className="w-5 h-5" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-800 text-sm">
-                            {isLeaf ? 'Leaf Node Analysis' : 'Split Decision Analysis'}
+                        <h3 className="font-bold text-slate-800 text-base">
+                            {isLeaf ? 'Leaf Node Prediction' : 'Split Decision Analysis'}
                         </h3>
-                        <p className="text-xs text-slate-500 font-mono">
-                            Samples: {samples} &bull; Impurity: {fmt(impurity)}
-                        </p>
+                        <div className="flex items-center gap-3 mt-1 text-sm text-slate-500 font-medium">
+                            <span className="flex items-center gap-1">
+                                <Hash className="w-3 h-3" /> {samples} Samples
+                            </span>
+                            <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                            <span>Impurity: <span className="text-slate-700 font-mono">{fmt(impurity)}</span></span>
+                        </div>
                     </div>
                 </div>
+
                 {!isLeaf && (
-                    <div className="text-xs bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm font-mono text-slate-600">
-                        Feature {feature === 0 ? "X" : "Y"} &le; {fmt(threshold)}
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full shadow-sm">
+                        <span className="text-xs font-bold text-slate-500 uppercase">Rule</span>
+                        <span className="text-sm font-mono font-semibold text-slate-700">
+                            {feature === 0 ? "X" : "Y"} &le; {fmt(threshold)}
+                        </span>
                     </div>
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                {/* Step 1: Parent Impurity */}
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50/30 custom-scrollbar">
+
+                {/* Section 1: Impurity Calculation */}
                 <section>
-                    <div className="flex items-center gap-2 mb-3">
-                        <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold">1</div>
-                        <h4 className="font-semibold text-slate-700">Node Impurity Calculation</h4>
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold font-mono">1</div>
+                        <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Node Impurity Calculation</h4>
                     </div>
 
-                    <div className="ml-8 bg-slate-50 rounded-xl p-4 border border-slate-100">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="ml-9 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                            {/* Left: Formula */}
                             <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Formula ({impurityName})</p>
-                                <div className="text-lg font-serif text-slate-800 bg-white p-3 rounded-lg border border-slate-200 shadow-sm inline-block">
-                                    I = {renderImpurityFormula()}
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Formula ({impurityName})</p>
+                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-center justify-center min-h-[80px]">
+                                    <div className="text-xl font-serif text-slate-800">
+                                        {criterion === 'gini' && <span>I = 1 - &sum; p<sub>i</sub><sup>2</sup></span>}
+                                        {criterion === 'entropy' && <span>H = - &sum; p<sub>i</sub> log<sub>2</sub>(p<sub>i</sub>)</span>}
+                                        {criterion === 'mse' && <span>MSE = &frac12; &sum; (y - &#x0233;)<sup>2</sup></span>}
+                                    </div>
                                 </div>
                             </div>
 
-                            {math?.probs && (
-                                <div>
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Probabilities (p<sub>i</sub>)</p>
-                                    <div className="space-y-1">
-                                        {math.probs.map((p, idx) => (
-                                            <div key={idx} className="flex items-center justify-between text-sm border-b border-slate-100 pb-1 last:border-0">
-                                                <span className="text-slate-600">Class {idx}</span>
-                                                <span className="font-mono font-medium">{math.class_counts[idx]} / {samples} = {fmt(p)}</span>
+                            {/* Right: Probabilities */}
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Probabilities (p<sub>i</sub>)</p>
+                                <div className="space-y-2">
+                                    {safeMath.probs && safeMath.probs.map((p, idx) => (
+                                        <div key={idx} className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-blue-500' : 'bg-red-500'}`}></span>
+                                                <span className="text-slate-600 font-medium">Class {idx}</span>
                                             </div>
-                                        ))}
-                                    </div>
+                                            <div className="font-mono text-slate-700">
+                                                {safeMath.class_counts[idx]} / {samples} = <strong>{fmt(p)}</strong>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {(!safeMath.probs || safeMath.probs.length === 0) && (
+                                        <div className="text-sm text-slate-400 italic">Regression node value: {fmt(value[0])}</div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
 
-                            {math?.terms && (
-                                <div className="col-span-1 md:col-span-2">
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Substitution</p>
-                                    <div className="font-mono text-sm text-slate-700 bg-white p-3 rounded-lg border border-slate-200">
+                            {/* Bottom: Substitution */}
+                            {safeMath.terms && (
+                                <div className="col-span-1 md:col-span-2 mt-2">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Substitution</p>
+                                    <div className="font-mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-4 break-all">
                                         I = {criterion === 'gini' ? '1 - ' : '-'} (
-                                        {math.terms.map(t => fmt(t)).join(' + ')}
-                                        ) = <span className="font-bold text-indigo-600">{fmt(impurity)}</span>
+                                        {safeMath.terms.map((t, i) => (
+                                            <span key={i}>
+                                                {fmt(t)}{i < safeMath.terms.length - 1 ? ' + ' : ''}
+                                            </span>
+                                        ))}
+                                        ) = <span className="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{fmt(impurity)}</span>
                                     </div>
                                 </div>
                             )}
@@ -101,54 +126,49 @@ const StepByStepMath = ({ selectedNode }) => {
                     </div>
                 </section>
 
-                {/* Step 2: Information Gain (Only for splits) */}
-                {!isLeaf && (
+                {/* Section 2: Information Gain (Splits only) */}
+                {!isLeaf && children && children.length === 2 && (
                     <section>
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold">2</div>
-                            <h4 className="font-semibold text-slate-700">Information Gain (Split Quality)</h4>
+                         <div className="flex items-center gap-3 mb-4">
+                            <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold font-mono">2</div>
+                            <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Information Gain (Split Quality)</h4>
                         </div>
 
-                        <div className="ml-8 space-y-4">
-                            {/* Children Stats */}
+                        <div className="ml-9 space-y-4">
+                            {/* Child Nodes Preview */}
                             <div className="grid grid-cols-2 gap-4">
                                 {children.map((child, idx) => (
-                                    <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm relative overflow-hidden">
-                                        <div className={`absolute top-0 left-0 w-1 h-full ${idx === 0 ? 'bg-blue-400' : 'bg-orange-400'}`}></div>
-                                        <p className="text-xs font-bold text-slate-400 uppercase mb-1">{idx === 0 ? 'Left' : 'Right'} Child</p>
-                                        <div className="flex justify-between items-end">
-                                            <div>
-                                                <p className="text-2xl font-bold text-slate-800">{fmt(child.impurity)}</p>
-                                                <p className="text-xs text-slate-500">Impurity</p>
+                                    <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm relative overflow-hidden group hover:border-indigo-200 transition-colors">
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${idx === 0 ? 'bg-emerald-400' : 'bg-amber-400'}`}></div>
+                                        <div className="ml-2">
+                                            <p className="text-xs font-bold text-slate-400 uppercase mb-1">{idx === 0 ? 'Left Child (True)' : 'Right Child (False)'}</p>
+                                            <div className="flex justify-between items-baseline">
+                                                <span className="text-xl font-bold text-slate-700">{fmt(child.impurity)}</span>
+                                                <span className="text-xs text-slate-500">{child.samples} samples</span>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="font-mono font-medium text-slate-700">{child.samples}</p>
-                                                <p className="text-xs text-slate-500">Samples</p>
-                                            </div>
-                                        </div>
-                                        <div className="mt-2 text-xs bg-slate-50 p-1 rounded text-slate-600 text-center">
-                                            Weight: {child.samples}/{samples} = {fmt(child.samples/samples)}
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            {/* Gain Calculation */}
-                            <div className="bg-yellow-50/50 border border-yellow-100 rounded-xl p-4">
-                                <p className="text-xs font-bold text-yellow-600 uppercase tracking-wider mb-2">Gain Formula</p>
-                                <div className="font-mono text-sm text-slate-700 mb-3">
-                                    Gain = I<sub>parent</sub> - [ (N<sub>L</sub>/N)*I<sub>L</sub> + (N<sub>R</sub>/N)*I<sub>R</sub> ]
+                            {/* Gain Math */}
+                            <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-5">
+                                <div className="flex justify-between items-center mb-4">
+                                    <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">Calculation</p>
+                                    <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded">weighted avg</span>
                                 </div>
-                                <div className="font-mono text-sm bg-white p-3 rounded-lg border border-yellow-200 text-slate-600">
-                                    Gain = {fmt(impurity)} - [
-                                    ({children[0].samples}/{samples} &times; {fmt(children[0].impurity)}) +
-                                    ({children[1].samples}/{samples} &times; {fmt(children[1].impurity)})
+
+                                <div className="font-mono text-sm text-slate-600 mb-4 bg-white/50 p-3 rounded border border-amber-100">
+                                    Gain = <span className="text-indigo-600 font-bold">{fmt(impurity)}</span> - [
+                                    (<span className="text-slate-800">{children[0].samples}</span>/{samples} &times; {fmt(children[0].impurity)}) +
+                                    (<span className="text-slate-800">{children[1].samples}</span>/{samples} &times; {fmt(children[1].impurity)})
                                     ]
                                 </div>
-                                <div className="mt-3 flex items-center gap-3">
-                                    <ArrowRight className="text-yellow-400" />
-                                    <span className="text-2xl font-bold text-yellow-700">{fmt(gain)}</span>
-                                    <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">Impurity Reduction</span>
+
+                                <div className="flex items-center gap-3 pt-2 border-t border-amber-100">
+                                    <span className="text-sm font-semibold text-amber-800">Result:</span>
+                                    <span className="text-2xl font-bold text-amber-600">{fmt(gain)}</span>
+                                    <span className="text-xs text-amber-600 ml-auto">Impurity Reduction</span>
                                 </div>
                             </div>
                         </div>

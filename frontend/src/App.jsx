@@ -230,12 +230,12 @@ function App() {
                     </motion.div>
                 </div>
 
-                {/* Step-by-Step Math Panel - Fixed height at bottom, flex-shrink-0 */}
+                {/* Step-by-Step Math Panel - Detailed Analysis */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden shrink-0 h-[300px] relative z-20"
+                    className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden shrink-0 h-[360px] relative z-20 flex flex-col"
                 >
                     <StepByStepMath selectedNode={selectedNode} />
                 </motion.div>
