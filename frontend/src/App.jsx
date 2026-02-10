@@ -109,58 +109,69 @@ function App() {
     const currentTreeStructure = getTreeStructure();
 
     return (
-        <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
-            <Sidebar
-                datasetType={datasetType} setDatasetType={setDatasetType}
-                noise={noise} setNoise={setNoise}
-                onGenerate={handleGenerateData}
-                algoType={algoType} setAlgoType={setAlgoType}
-                params={params} setParams={setParams}
-                onTrain={handleTrain}
-            />
+        <div className="flex min-h-screen bg-slate-50 font-sans">
+            {/* Sidebar - Sticky */}
+            <div className="sticky top-0 h-screen overflow-y-auto shrink-0 z-20">
+                <Sidebar
+                    datasetType={datasetType} setDatasetType={setDatasetType}
+                    noise={noise} setNoise={setNoise}
+                    onGenerate={handleGenerateData}
+                    algoType={algoType} setAlgoType={setAlgoType}
+                    params={params} setParams={setParams}
+                    onTrain={handleTrain}
+                />
+            </div>
 
-            <main className="flex-1 p-6 flex flex-col gap-6 h-full min-h-0 relative">
+            <main className="flex-1 p-8 flex flex-col gap-8 w-full overflow-x-hidden">
                 {/* Header Stats */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex justify-between items-center bg-white/80 backdrop-blur p-4 rounded-xl shadow-sm border border-slate-100 shrink-0 z-10"
+                    className="flex justify-between items-center bg-white/90 backdrop-blur p-6 rounded-2xl shadow-sm border border-slate-100 shrink-0"
                 >
                     <div>
-                        <h2 className="text-xl font-bold text-slate-800">
-                            {algoType === 'tree' ? 'Decision Tree' :
-                             algoType === 'forest' ? 'Random Forest' : 'Gradient Boosting'}
+                        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
+                            {algoType === 'tree' ? 'Decision Tree Analysis' :
+                             algoType === 'forest' ? 'Random Forest Ensemble' : 'Gradient Boosting Machine'}
                         </h2>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-500 mt-1">
                             Task: <span className="font-semibold uppercase text-slate-700">{datasetType === 'regression' ? 'Regression' : 'Classification'}</span>
+                            <span className="mx-2">•</span>
+                            <span>Explore the mathematical intuition behind the algorithm.</span>
                         </p>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-6">
                         {loading && <span className="text-indigo-600 font-medium animate-pulse flex items-center gap-2"><span className="w-2 h-2 bg-indigo-600 rounded-full animate-ping"></span> Training...</span>}
                         {error && <span className="text-rose-500 font-semibold text-sm bg-rose-50 px-3 py-1 rounded-full">{error}</span>}
                         {modelResult && (
                             <div className="text-right">
-                                <p className="text-xs text-slate-400 uppercase tracking-wider">Model Score</p>
-                                <p className="text-2xl font-bold text-emerald-600">{modelResult.score?.toFixed(4)}</p>
+                                <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Model Score</p>
+                                <p className="text-3xl font-bold text-emerald-600 tabular-nums">{modelResult.score?.toFixed(4)}</p>
                             </div>
                         )}
                     </div>
                 </motion.div>
 
-                {/* Visualizations Grid - Flex-1 to fill available height, min-h-0 allows shrinking */}
-                <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
+                {/* Main Visualizations Grid - Large Height */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 min-h-[600px] lg:min-h-[70vh]">
                     {/* Scatter Plot */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-0"
+                        className="bg-white p-1 rounded-2xl shadow-lg border border-slate-100 flex flex-col overflow-hidden ring-1 ring-slate-900/5"
                     >
-                        <div className="p-4 border-b border-slate-100 flex justify-between items-center shrink-0">
-                            <h3 className="font-semibold text-slate-700">Feature Space</h3>
-                            <span className="text-xs text-slate-400">Interactive Visualization</span>
+                        <div className="p-5 border-b border-slate-50 flex justify-between items-center shrink-0 bg-slate-50/30">
+                            <div>
+                                <h3 className="font-bold text-slate-700 text-lg">Feature Space</h3>
+                                <p className="text-xs text-slate-400 mt-0.5">Visualizing Decision Boundaries</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <span className="w-3 h-3 rounded-full bg-blue-500 block" title="Class 0"></span>
+                                <span className="w-3 h-3 rounded-full bg-red-500 block" title="Class 1"></span>
+                            </div>
                         </div>
-                        <div className="flex-1 relative min-h-0 bg-slate-50 rounded-b-xl overflow-hidden">
-                             {/* Container for ScatterPlot. We pass a key to force re-render if needed, but resizing is better. */}
+                        <div className="flex-1 relative bg-white rounded-b-xl overflow-hidden min-h-[500px]">
+                             {/* Container for ScatterPlot. Pass key to force re-render if needed. */}
                             <ScatterPlot
                                 data={data}
                                 boundaries={modelResult?.boundaries}
@@ -173,24 +184,27 @@ function App() {
 
                     {/* Tree Viz */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.1 }}
-                        className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-0"
+                        className="bg-white p-1 rounded-2xl shadow-lg border border-slate-100 flex flex-col overflow-hidden ring-1 ring-slate-900/5"
                     >
-                        <div className="p-4 border-b border-slate-100 flex justify-between items-center shrink-0">
-                            <h3 className="font-semibold text-slate-700">Model Structure</h3>
-                            <span className="text-xs text-slate-400">
-                                {algoType === 'tree' ? 'Zoom & Pan to Explore' : 'Ensemble Trees Viewer'}
-                            </span>
+                        <div className="p-5 border-b border-slate-50 flex justify-between items-center shrink-0 bg-slate-50/30">
+                            <div>
+                                <h3 className="font-bold text-slate-700 text-lg">Tree Structure</h3>
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                    {algoType === 'tree' ? 'Interactive Hierarchy - Click nodes to inspect' : 'Ensemble Component Viewer'}
+                                </p>
+                            </div>
+                            <span className="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">Zoom & Pan Enabled</span>
                         </div>
 
-                        <div className="flex-1 relative bg-slate-50 rounded-b-xl overflow-hidden min-h-0">
+                        <div className="flex-1 relative bg-slate-50/50 rounded-b-xl overflow-hidden min-h-[500px]">
                             {modelResult ? (
                                 <>
                                     {/* Ensemble Controls Overlay */}
                                     {(algoType === 'forest' || algoType === 'boosting') && modelResult?.trees && (
-                                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-full px-2 py-1 flex items-center gap-2">
+                                        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 bg-white/90 backdrop-blur shadow-lg border border-slate-200 rounded-full px-4 py-2 flex items-center gap-3">
                                             <button
                                                 onClick={() => setEnsembleTreeIndex(i => Math.max(0, i - 1))}
                                                 disabled={ensembleTreeIndex === 0}
@@ -198,7 +212,7 @@ function App() {
                                             >
                                                 &larr;
                                             </button>
-                                            <span className="text-xs font-mono font-bold text-slate-700 min-w-[80px] text-center">
+                                            <span className="text-sm font-mono font-bold text-slate-700 min-w-[100px] text-center">
                                                 Tree {ensembleTreeIndex + 1} / {modelResult.trees.length}
                                             </span>
                                             <button
@@ -221,9 +235,9 @@ function App() {
                                     />
                                 </>
                             ) : (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-2">
-                                    <span className="text-4xl opacity-50">🌲</span>
-                                    <p>Train a model to see its structure</p>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-4">
+                                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-3xl">🌲</div>
+                                    <p className="font-medium">Train a model to see its structure</p>
                                 </div>
                             )}
                         </div>
@@ -235,9 +249,15 @@ function App() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden shrink-0 h-[360px] relative z-20 flex flex-col"
+                    className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden shrink-0 ring-1 ring-slate-900/5 min-h-[400px]"
                 >
-                    <StepByStepMath selectedNode={selectedNode} />
+                    <div className="p-6 border-b border-slate-50 bg-slate-50/30">
+                        <h3 className="font-bold text-slate-800 text-lg">Mathematical Analysis</h3>
+                        <p className="text-sm text-slate-500">Detailed breakdown of the splitting criteria and information gain.</p>
+                    </div>
+                    <div className="p-0">
+                        <StepByStepMath selectedNode={selectedNode} />
+                    </div>
                 </motion.div>
             </main>
         </div>

@@ -3,25 +3,23 @@ import * as d3 from 'd3';
 import { useResizeObserver } from '../hooks/useResizeObserver';
 import { RefreshCw, Minus, Plus } from 'lucide-react';
 
-// Awesome Theme Colors (Shared Concept)
+// Awesome Theme Colors
 const THEME = {
     class0: '#3B82F6', // Blue 500
     class1: '#EF4444', // Red 500
     stroke: '#CBD5E1', // Slate 300
     text: '#475569',   // Slate 600
-    selected: '#10B981' // Emerald 500
+    selected: '#10B981', // Emerald 500
+    selectedStroke: '#059669' // Emerald 600
 };
 
-const TreeDiagram = ({ structure, task, onNodeClick, selectedNode }) => {
+const TreeDiagram = ({ structure, task, onNodeClick, selectedNode, dataDomain }) => {
     const containerRef = useRef(null);
     const dimensions = useResizeObserver(containerRef);
     const svgRef = useRef(null);
     const gRef = useRef(null);
 
-    // Zoom State
-    const [zoomTransform, setZoomTransform] = useState(d3.zoomIdentity);
-
-    // Setup Zoom
+    // Setup Zoom (Run once)
     useEffect(() => {
         if (!svgRef.current || !gRef.current) return;
 
@@ -32,11 +30,9 @@ const TreeDiagram = ({ structure, task, onNodeClick, selectedNode }) => {
             .scaleExtent([0.1, 4])
             .on("zoom", (event) => {
                 g.attr("transform", event.transform);
-                setZoomTransform(event.transform);
             });
 
         svg.call(zoomBehavior);
-        // Initial center happens in the draw effect
     }, []);
 
     const handleZoom = (factor) => {
@@ -48,14 +44,13 @@ const TreeDiagram = ({ structure, task, onNodeClick, selectedNode }) => {
     const resetZoom = () => {
         if (!svgRef.current || !dimensions) return;
         const svg = d3.select(svgRef.current);
-        // Reset to center roughly
         svg.transition().duration(750).call(
             d3.zoom().transform,
-            d3.zoomIdentity.translate(dimensions.width/2, 50).scale(0.8)
+            d3.zoomIdentity.translate(dimensions.width/2, 50).scale(1)
         );
     };
 
-    // Draw Tree
+    // Draw Tree Structure
     useEffect(() => {
         if (!structure || !dimensions || !gRef.current) return;
 
@@ -63,51 +58,26 @@ const TreeDiagram = ({ structure, task, onNodeClick, selectedNode }) => {
         if (width === 0 || height === 0) return;
 
         const g = d3.select(gRef.current);
-        g.selectAll("*").remove(); // Clear
+
+        // Clear previous tree
+        g.selectAll("*").remove();
 
         // 1. Process Data
         const root = d3.hierarchy(structure);
 
         // 2. Layout
-        // We use nodeSize to ensure consistent spacing regardless of tree size
-        // x is horizontal, y is vertical in d3.tree() by default?
-        // No, d3.tree() produces x,y coordinates.
-        // If we want top-down: x is horizontal, y is vertical.
-
         const nodeWidth = 70;
         const nodeHeight = 80;
-
         const treeLayout = d3.tree().nodeSize([nodeWidth, nodeHeight]);
         treeLayout(root);
-
-        // Center the tree horizontally
-        // d3.tree with nodeSize sets root at (0,0).
-        // Children spread out around 0.
-        // We need to translate the group to the center of the SVG.
-
-        // However, the zoom behavior controls the transform of gRef.
-        // But we want the *content* to be centered initially.
-        // If we rely on d3.zoom identity, (0,0) is top-left.
-        // So we should just render the tree as is, and let the initial zoom handle centering?
-        // Or wrap the content in a group that is centered?
-        // Let's render relative to (0,0) being root, and set initial translation.
-
-        // Fix overlaps if tree is wide
-        let x0 = Infinity;
-        let x1 = -Infinity;
-        root.each(d => {
-            if (d.x > x1) x1 = d.x;
-            if (d.x < x0) x0 = d.x;
-        });
 
         // 3. Draw Links (Curved)
         const linkPath = d3.linkVertical()
             .x(d => d.x)
             .y(d => d.y);
 
-        const linksG = g.append("g").attr("class", "links");
-
-        linksG.selectAll(".link")
+        g.append("g").attr("class", "links")
+            .selectAll(".link")
             .data(root.links())
             .enter()
             .append("path")
@@ -129,72 +99,52 @@ const TreeDiagram = ({ structure, task, onNodeClick, selectedNode }) => {
             .attr("transform", d => `translate(${d.x},${d.y})`)
             .on("click", (event, d) => {
                 event.stopPropagation();
-                if (onNodeClick) onNodeClick(d.data); // Pass raw data
+                if (onNodeClick) onNodeClick(d.data);
             });
 
-        // Node Circle
+        // Node Circle (Base)
         nodeGroups.append("circle")
-            .attr("r", 8)
+            .attr("r", 10)
             .attr("fill", d => {
-                // Color by dominant class
-                if (task === 'regression') {
-                     // Regression: color by value (normalized? hard without domain)
-                     // Just use a neutral or gradient based on value vs parent?
-                     // Simple: Blue
-                     return "#60A5FA";
-                } else {
-                    // Classification: Class 0 vs 1
-                    // value is [count0, count1]
-                    const counts = d.data.value || [0, 0];
-                    const total = counts[0] + counts[1];
-                    const p1 = total > 0 ? counts[1] / total : 0;
-                    // Interpolate color? Or hard split?
-                    // Hard split matches the regions usually.
-                    return p1 > 0.5 ? THEME.class1 : THEME.class0;
-                }
+                if (task === 'regression') return "#60A5FA";
+                const counts = d.data.value || [0, 0];
+                const total = counts[0] + counts[1];
+                const p1 = total > 0 ? counts[1] / total : 0;
+                return p1 > 0.5 ? THEME.class1 : THEME.class0;
             })
             .attr("stroke", "#ffffff")
             .attr("stroke-width", 2)
-            // Selected State Ring
-            .each(function(d) {
-                if (selectedNode && (d.data === selectedNode || d.data.id === selectedNode.id)) {
-                    d3.select(this)
-                        .attr("stroke", THEME.selected)
-                        .attr("stroke-width", 3)
-                        .attr("r", 10);
-                }
-            });
+            .attr("class", "node-circle shadow-sm");
 
-        // Labels (Background)
+        // Labels (Condition)
         const labelGroup = nodeGroups.append("g")
-            .attr("transform", "translate(0, -15)"); // Above node
+            .attr("transform", "translate(0, -18)");
 
         labelGroup.append("text")
             .attr("text-anchor", "middle")
             .attr("fill", THEME.text)
             .style("font-family", "Inter, sans-serif")
             .style("font-weight", "600")
-            .style("font-size", "10px")
+            .style("font-size", "11px")
             .text(d => {
-                if (!d.children) return ""; // Leaf? Maybe show class
-                // Split node
+                if (!d.children) return "";
                 return d.data.feature === 0
                     ? `X ≤ ${d.data.threshold.toFixed(2)}`
                     : `Y ≤ ${d.data.threshold.toFixed(2)}`;
             })
             .call(text => text.clone(true).lower()
                 .attr("stroke", "white")
-                .attr("stroke-width", 4)
+                .attr("stroke-width", 3)
                 .attr("stroke-linejoin", "round")
             );
 
-        // Leaf Labels (Class Prediction)
+        // Leaf Labels
         nodeGroups.filter(d => !d.children).append("text")
-            .attr("dy", "20")
+            .attr("dy", "24")
             .attr("text-anchor", "middle")
             .attr("fill", "#94a3b8")
             .style("font-family", "Inter, sans-serif")
-            .style("font-size", "9px")
+            .style("font-size", "10px")
             .style("font-weight", "500")
             .text(d => {
                  if (task === 'regression') return d.data.value[0]?.toFixed(2);
@@ -202,17 +152,40 @@ const TreeDiagram = ({ structure, task, onNodeClick, selectedNode }) => {
                  return counts[1] > counts[0] ? "Class 1" : "Class 0";
             });
 
-    }, [structure, dimensions, selectedNode, task]);
+    }, [structure, dimensions, task]); // Only redraw if structure changes
 
-    // Initial centering when data loads
+    // Update Selection (Separate Effect)
+    useEffect(() => {
+        if (!gRef.current) return;
+        const g = d3.select(gRef.current);
+
+        g.selectAll(".node circle")
+            .transition().duration(200)
+            .attr("stroke", function(d) {
+                // Check if this node is selected
+                // d is the hierarchy node, d.data is the raw data
+                const isSelected = selectedNode && (d.data === selectedNode || d.data.id === selectedNode.id);
+                return isSelected ? THEME.selectedStroke : "#ffffff";
+            })
+            .attr("stroke-width", function(d) {
+                const isSelected = selectedNode && (d.data === selectedNode || d.data.id === selectedNode.id);
+                return isSelected ? 4 : 2;
+            })
+            .attr("r", function(d) {
+                const isSelected = selectedNode && (d.data === selectedNode || d.data.id === selectedNode.id);
+                return isSelected ? 12 : 10;
+            });
+
+    }, [selectedNode]);
+
+    // Initial Centering
     useEffect(() => {
         if (structure && dimensions && svgRef.current) {
-            // Wait for render?
-            // Simple approach: Center (0,0) (root) at (width/2, 50)
-            const svg = d3.select(svgRef.current);
-             svg.call(d3.zoom().transform, d3.zoomIdentity.translate(dimensions.width / 2, 40).scale(1));
+             const svg = d3.select(svgRef.current);
+             // Reset zoom to center
+             svg.call(d3.zoom().transform, d3.zoomIdentity.translate(dimensions.width / 2, 50).scale(1));
         }
-    }, [structure, dimensions?.width]); // dimensions?.width helps trigger on resize
+    }, [structure, dimensions?.width]);
 
     return (
         <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-slate-50/30">
