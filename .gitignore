@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+backend/test_api.py
+backend/test_api_reg.py
+verification/
+backend.log
+frontend.log
+dist/
+.DS_Store

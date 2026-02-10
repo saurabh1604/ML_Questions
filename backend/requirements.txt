@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+scikit-learn
+pandas
+numpy
+typing
+pytest
+requests
+python-multipart
+# Add any other required packages here
