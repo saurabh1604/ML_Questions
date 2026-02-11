@@ -154,10 +154,12 @@ def train_forest(req: TrainForestRequest):
                 "label": val if req.task == "regression" else int(val)
             })
 
+    # Return all trees (up to a safe limit to avoid huge payloads, e.g., 50)
+    limit = min(req.n_estimators, 50)
     return {
         "score": float(clf.score(X, y)),
         "boundary_grid": grid_data,
-        "trees": [tree_to_json(estimator, feature_names=["x", "y"]) for estimator in clf.estimators_[:3]]
+        "trees": [tree_to_json(estimator, feature_names=["x", "y"]) for estimator in clf.estimators_[:limit]]
     }
 
 @app.post("/api/train/boosting")
@@ -185,6 +187,7 @@ def train_boosting(req: TrainBoostingRequest):
     clf.fit(X, y)
 
     trees = []
+    limit = min(req.n_estimators, 50)
     for i, estimator_array in enumerate(clf.estimators_):
         # Estimator is a DecisionTreeRegressor (predicting residuals)
         # For GBRegressor, estimator_array is shape (1,) -> array([tree])
@@ -192,7 +195,7 @@ def train_boosting(req: TrainBoostingRequest):
         # For GBClassifier multiclass, shape (n_classes,)
         tree = estimator_array[0] # Take the first one (class 0 or only one)
         trees.append(tree_to_json(tree, feature_names=["x", "y"]))
-        if i >= 5: break # Limit to first 5 for now
+        if i >= limit - 1: break # Limit
 
     x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
     y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
