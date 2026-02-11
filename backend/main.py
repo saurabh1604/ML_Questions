@@ -24,7 +24,7 @@ app.add_middleware(
 class DataPoint(BaseModel):
     x: float
     y: float
-    label: int
+    label: float  # Can be float for regression
 
 class DatasetRequest(BaseModel):
     type: str
@@ -86,6 +86,7 @@ def train_tree(req: TrainTreeRequest):
             random_state=42
         )
     else:
+        y = y.astype(int) # Ensure int labels for classification
         clf = DecisionTreeClassifier(
             max_depth=req.max_depth,
             min_samples_split=req.min_samples_split,
@@ -127,6 +128,7 @@ def train_forest(req: TrainForestRequest):
             random_state=42
         )
     else:
+        y = y.astype(int)
         clf = RandomForestClassifier(
             n_estimators=req.n_estimators,
             max_depth=req.max_depth,
@@ -178,6 +180,7 @@ def train_boosting(req: TrainBoostingRequest):
             random_state=42
         )
     else:
+        y = y.astype(int)
         clf = GradientBoostingClassifier(
             n_estimators=req.n_estimators,
             learning_rate=req.learning_rate,

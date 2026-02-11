@@ -1,7 +1,8 @@
 import React from 'react';
-import { Calculator, ArrowRight, GitCommit, ChevronRight, Activity, PieChart, BarChart2, TrendingUp } from 'lucide-react';
+import { Calculator, Activity, PieChart, BarChart2, TrendingUp, ArrowDown } from 'lucide-react';
 
 const StepByStepMath = ({ selectedNode }) => {
+    // If no node selected, show placeholder
     if (!selectedNode) {
         return (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 p-12 text-center">
@@ -22,21 +23,33 @@ const StepByStepMath = ({ selectedNode }) => {
         math
     } = selectedNode;
 
-    // Safety check
+    // Safety check & Defaults
     const safeMath = math || { probs: [], class_counts: [], terms: [] };
     const isLeaf = !children || children.length === 0;
     const criterion = safeMath.criterion || 'gini';
+    const isRegression = value && value.length === 1; // Or check task type from props if available
 
     const fmt = (n) => typeof n === 'number' ? n.toFixed(3) : n;
 
-    // Detect Task
-    const isRegression = value && value.length === 1;
-    const totalSamples = samples || 1;
-
     // Classification Stats
+    const totalSamples = samples || 1;
     const counts = value || [0, 0];
-    const p0 = !isRegression ? (counts[0] / totalSamples * 100) : 0;
+    const p0 = !isRegression && counts.length > 1 ? (counts[0] / totalSamples * 100) : 0;
     const p1 = !isRegression && counts.length > 1 ? (counts[1] / totalSamples * 100) : 0;
+
+    // Helper Component for Bar Chart
+    const DistributionBar = ({ p0, p1, label }) => (
+        <div className="w-full">
+            <div className="flex justify-between text-xs text-slate-500 mb-1 font-medium">
+                <span>{label}</span>
+                <span>{Math.round(p0)}% / {Math.round(p1)}%</span>
+            </div>
+            <div className="flex h-3 w-full rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-100">
+                <div style={{ width: `${p0}%` }} className="bg-blue-500 transition-all duration-300" />
+                <div style={{ width: `${p1}%` }} className="bg-rose-500 transition-all duration-300" />
+            </div>
+        </div>
+    );
 
     return (
         <div className="h-full flex flex-col bg-white">
@@ -44,11 +57,11 @@ const StepByStepMath = ({ selectedNode }) => {
             <div className="p-6 border-b border-slate-100 flex items-start justify-between bg-white/50 backdrop-blur-sm sticky top-0 z-10">
                 <div className="flex items-center gap-4">
                     <div className={`p-3 rounded-xl ${isLeaf ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600'}`}>
-                        {isLeaf ? <PieChart className="w-6 h-6" /> : <GitCommit className="w-6 h-6" />}
+                        {isLeaf ? <PieChart className="w-6 h-6" /> : <Activity className="w-6 h-6" />}
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-800 text-lg">
-                            {isLeaf ? 'Leaf Prediction' : 'Split Decision'}
+                            {isLeaf ? 'Leaf Prediction' : 'Split Decision Analysis'}
                         </h3>
                         <div className="flex items-center gap-3 mt-1 text-xs font-medium text-slate-500 uppercase tracking-wide">
                             <span>Samples: {samples}</span>
@@ -71,60 +84,82 @@ const StepByStepMath = ({ selectedNode }) => {
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-10 custom-scrollbar">
 
-                {/* 1. Distribution / Value */}
+                {/* 1. Visual Intuition (Flow) */}
                 <section>
                     <div className="flex items-center gap-2 mb-4">
-                        {isRegression ? <TrendingUp className="w-4 h-4 text-slate-400" /> : <BarChart2 className="w-4 h-4 text-slate-400" />}
-                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                            {isRegression ? 'Node Value (Mean)' : 'Class Distribution'}
-                        </h4>
+                        <BarChart2 className="w-4 h-4 text-slate-400" />
+                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Visual Intuition</h4>
                     </div>
 
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-5">
-                        {isRegression ? (
-                            <div className="flex flex-col items-center justify-center py-4">
-                                <span className="text-3xl font-mono font-bold text-slate-700">{fmt(value[0])}</span>
-                                <span className="text-xs text-slate-400 mt-1">Mean Squared Error: {fmt(impurity)}</span>
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 relative">
+                        {/* Parent */}
+                        <div className="mb-4">
+                             {isRegression ? (
+                                <div className="text-center font-mono font-bold text-slate-700 text-lg">Avg: {fmt(value[0])}</div>
+                             ) : (
+                                <DistributionBar p0={p0} p1={p1} label="Current Node (Parent)" />
+                             )}
+                        </div>
+
+                        {/* Arrows */}
+                        {!isLeaf && (
+                            <div className="flex justify-center items-center gap-16 mb-2 text-slate-300">
+                                <ArrowDown className="w-5 h-5 -rotate-45" />
+                                <ArrowDown className="w-5 h-5 rotate-45" />
                             </div>
-                        ) : (
-                            <>
-                                <div className="flex h-6 w-full rounded-full overflow-hidden mb-3 ring-1 ring-slate-200">
-                                    <div style={{ width: `${p0}%` }} className="bg-blue-500 transition-all duration-500 flex items-center justify-center text-[10px] text-white font-bold">
-                                        {p0 > 10 && `${Math.round(p0)}%`}
-                                    </div>
-                                    <div style={{ width: `${p1}%` }} className="bg-rose-500 transition-all duration-500 flex items-center justify-center text-[10px] text-white font-bold">
-                                        {p1 > 10 && `${Math.round(p1)}%`}
-                                    </div>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                        <span className="text-slate-600 font-medium">Class 0: <span className="font-mono">{counts[0]}</span></span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-rose-500"></div>
-                                        <span className="text-slate-600 font-medium">Class 1: <span className="font-mono">{counts[1]}</span></span>
-                                    </div>
-                                </div>
-                            </>
+                        )}
+
+                        {/* Children */}
+                        {!isLeaf && children && (
+                            <div className="grid grid-cols-2 gap-8">
+                                {children.map((child, i) => {
+                                    // Calculate child stats
+                                    const cTotal = child.samples || 1;
+                                    const cCounts = child.value || [0, 0];
+                                    const cp0 = !isRegression && cCounts.length > 1 ? (cCounts[0] / cTotal * 100) : 0;
+                                    const cp1 = !isRegression && cCounts.length > 1 ? (cCounts[1] / cTotal * 100) : 0;
+
+                                    return (
+                                        <div key={i} className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-2 text-center">
+                                                {i === 0 ? 'True Branch (Left)' : 'False Branch (Right)'}
+                                            </p>
+                                            {isRegression ? (
+                                                <div className="text-center font-mono font-bold text-slate-700 text-sm">Avg: {fmt(child.value[0])}</div>
+                                            ) : (
+                                                <DistributionBar p0={cp0} p1={cp1} label="" />
+                                            )}
+                                            <div className="mt-2 text-center text-[10px] text-slate-400">
+                                                Impurity: {fmt(child.impurity)}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {isLeaf && (
+                            <div className="text-center text-sm text-slate-500 italic bg-white p-3 rounded border border-slate-100">
+                                This is a terminal node. No further splits.
+                            </div>
                         )}
                     </div>
                 </section>
 
-                {/* 2. Impurity Math */}
+                {/* 2. Mathematical Detail */}
                 <section>
                     <div className="flex items-center gap-2 mb-4">
                         <Calculator className="w-4 h-4 text-slate-400" />
                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                            {criterion === 'mse' ? 'Error Calculation' : `Impurity Calculation (${criterion})`}
+                            Mathematical Derivation ({criterion})
                         </h4>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-4">
                          {/* Formula Card */}
                          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                            <div className="text-center py-2">
-                                <span className="font-serif text-xl text-slate-700 italic">
+                            <div className="text-center py-3 bg-slate-50/50 rounded-lg mb-4">
+                                <span className="font-serif text-xl text-slate-800 italic">
                                     {criterion === 'gini' && <span>I = 1 - &sum; (p<sub>i</sub>)<sup>2</sup></span>}
                                     {criterion === 'entropy' && <span>H = - &sum; p<sub>i</sub> log<sub>2</sub>(p<sub>i</sub>)</span>}
                                     {criterion === 'mse' && <span>MSE = &frac12; &sum; (y - &#x0233;)<sup>2</sup></span>}
@@ -132,18 +167,30 @@ const StepByStepMath = ({ selectedNode }) => {
                             </div>
 
                             {!isRegression && (
-                                <div className="mt-4 pt-4 border-t border-slate-100">
-                                    <p className="text-xs font-mono text-slate-500 mb-2">Substitution:</p>
-                                    <div className="font-mono text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 overflow-x-auto">
-                                        {criterion === 'gini' ? '1 - ' : '-'} [
-                                        {safeMath.terms && safeMath.terms.map((t, i) => (
-                                            <span key={i}>{fmt(Math.abs(t))}{i < safeMath.terms.length - 1 ? ' + ' : ''}</span>
-                                        ))}
-                                        ]
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center text-xs text-slate-500 border-b border-slate-100 pb-2">
+                                        <span>Substituted Values:</span>
                                     </div>
-                                    <div className="mt-2 text-right">
-                                        <span className="text-xs text-slate-400 mr-2">=</span>
-                                        <span className="text-lg font-bold text-indigo-600">{fmt(impurity)}</span>
+
+                                    {/* Detailed Substitution */}
+                                    <div className="font-mono text-sm text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-100 overflow-x-auto whitespace-nowrap">
+                                        <span className="text-slate-400">{criterion === 'gini' ? '1 - ' : '-'} [ </span>
+                                        {safeMath.probs && safeMath.probs.map((p, i) => (
+                                            <span key={i}>
+                                                <span className={i === 0 ? "text-blue-600" : "text-rose-600"}>
+                                                    ({fmt(p)})²
+                                                </span>
+                                                {i < safeMath.probs.length - 1 ? <span className="text-slate-400 mx-1">+</span> : ''}
+                                            </span>
+                                        ))}
+                                        <span className="text-slate-400"> ]</span>
+                                    </div>
+
+                                    <div className="flex justify-end items-center gap-2 mt-2">
+                                        <span className="text-xs text-slate-400">Result =</span>
+                                        <span className="text-xl font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">
+                                            {fmt(impurity)}
+                                        </span>
                                     </div>
                                 </div>
                             )}
@@ -155,53 +202,38 @@ const StepByStepMath = ({ selectedNode }) => {
                 {!isLeaf && children && (
                     <section>
                          <div className="flex items-center gap-2 mb-4">
-                            <Activity className="w-4 h-4 text-slate-400" />
+                            <TrendingUp className="w-4 h-4 text-slate-400" />
                             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                                 {isRegression ? 'Variance Reduction' : 'Information Gain'}
                             </h4>
                         </div>
 
-                        <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-6 relative overflow-hidden">
-                            {/* Background decoration */}
-                            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-indigo-100 rounded-full opacity-50 blur-2xl pointer-events-none"></div>
-
-                            <div className="relative z-10">
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="text-sm font-medium text-slate-600">Metric Improvement</span>
-                                    <span className="text-2xl font-black text-indigo-600 tracking-tight">{fmt(gain)}</span>
+                        <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-xl p-6 relative overflow-hidden shadow-sm">
+                            <div className="relative z-10 flex flex-col gap-4">
+                                <div className="flex justify-between items-end border-b border-indigo-100 pb-4">
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-medium mb-1">Gain Calculation</p>
+                                        <p className="text-sm font-bold text-slate-700">Parent Impurity - Weighted Child Impurity</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-3xl font-black text-indigo-600 tracking-tight">{fmt(gain)}</span>
+                                        <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider mt-1">Improvement</p>
+                                    </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <div className="text-xs text-slate-500 font-mono">
-                                        Gain = Parent - (Weighted Children)
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm font-mono text-slate-600 bg-white/60 p-2 rounded border border-indigo-100/50">
-                                        {fmt(impurity)} - [
-                                        <span className="text-emerald-600 font-bold">{fmt(children[0]?.impurity)}</span>
-                                        <span className="text-slate-400 px-1">&times;</span>
-                                        <span className="text-amber-600 font-bold">{children[1]?.impurity}</span>
-                                        ]
-                                    </div>
+                                <div className="font-mono text-xs text-slate-500 bg-white/80 p-3 rounded border border-indigo-50">
+                                    {fmt(impurity)} - [
+                                    (
+                                    <span className="text-slate-700 font-bold">{children[0]?.samples}</span>
+                                    /{samples} &times;
+                                    <span className="text-emerald-600 font-bold">{fmt(children[0]?.impurity)}</span>
+                                    ) + (
+                                    <span className="text-slate-700 font-bold">{children[1]?.samples}</span>
+                                    /{samples} &times;
+                                    <span className="text-amber-600 font-bold">{fmt(children[1]?.impurity)}</span>
+                                    ) ]
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Children Preview */}
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                             {children.map((child, i) => (
-                                <div key={i} className="group relative bg-white border border-slate-200 rounded-xl p-4 hover:border-indigo-300 transition-colors">
-                                    <div className={`absolute top-0 left-0 bottom-0 w-1 ${i === 0 ? 'bg-indigo-400' : 'bg-rose-400'} rounded-l-xl`}></div>
-                                    <div className="pl-3">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                                            {i === 0 ? 'True Branch' : 'False Branch'}
-                                        </p>
-                                        <div className="flex justify-between items-end">
-                                            <span className="text-lg font-bold text-slate-700">{fmt(child.impurity)}</span>
-                                            <span className="text-xs text-slate-500 font-medium">{child.samples} samples</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
                         </div>
                     </section>
                 )}

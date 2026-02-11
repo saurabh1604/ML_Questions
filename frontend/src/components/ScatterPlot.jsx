@@ -30,7 +30,7 @@ const ScatterPlot = ({ data, boundaries, boundaryGrid, task, selectedRegion }) =
     const svgRef = useRef(null);
 
     // Memoize scales/domains to prevent recalculation on every render frame
-    const { xScale, yScale, innerWidth, innerHeight, margin } = useMemo(() => {
+    const { xScale, yScale, colorScale, innerWidth, innerHeight, margin } = useMemo(() => {
         if (!dimensions || !data || data.length === 0) return {};
 
         const { width, height } = dimensions;
@@ -53,8 +53,19 @@ const ScatterPlot = ({ data, boundaries, boundaryGrid, task, selectedRegion }) =
         const xScale = d3.scaleLinear().domain([xMin, xMax]).range([0, innerWidth]);
         const yScale = d3.scaleLinear().domain([yMin, yMax]).range([innerHeight, 0]);
 
-        return { xScale, yScale, innerWidth, innerHeight, margin };
-    }, [dimensions, data]);
+        // Color Scale for Regression
+        let colorScale = null;
+        if (task === 'regression') {
+            const labelExtent = d3.extent(data, d => d.label);
+            colorScale = d3.scaleSequential(d3.interpolateRdBu).domain([labelExtent[1], labelExtent[0]]); // Reverse Red to Blue usually means High to Low? Or Blue=Low, Red=High?
+            // RdBu: Red (low) -> Blue (high) usually? No, actually Red is usually "Hot"/High?
+            // interpolateRdBu(0) is Red, (1) is Blue.
+            // Let's match typical heatmap: Red=High, Blue=Low.
+            // So domain([max, min]).
+        }
+
+        return { xScale, yScale, colorScale, innerWidth, innerHeight, margin };
+    }, [dimensions, data, task]);
 
     // Draw Chart
     useEffect(() => {
@@ -87,7 +98,10 @@ const ScatterPlot = ({ data, boundaries, boundaryGrid, task, selectedRegion }) =
                 .attr("width", d => Math.max(0, xScale(d.x + d.width) - xScale(d.x)))
                 .attr("height", d => Math.max(0, yScale(d.y) - yScale(d.y + d.height)))
                 .attr("fill", d => {
-                    if (task === 'regression') return d3.interpolateRdBu((d.value + 1) / 2); // Simplified normalization
+                    if (task === 'regression' && colorScale) {
+                        // Use 'class' field which holds predicted value
+                        return colorScale(d.class);
+                    }
                     return d.class === 1 ? THEME.class1.region : THEME.class0.region;
                 })
                 .attr("opacity", 0.8)
@@ -110,7 +124,7 @@ const ScatterPlot = ({ data, boundaries, boundaryGrid, task, selectedRegion }) =
                 .attr("width", width)
                 .attr("height", width)
                 .attr("fill", d => {
-                    if (task === 'regression') return d3.interpolateRdBu((d.label + 1) / 2);
+                    if (task === 'regression' && colorScale) return colorScale(d.label);
                     // Soft gradient for probabilities
                     return d3.interpolateRdBu(1 - d.label);
                 })
@@ -171,16 +185,17 @@ const ScatterPlot = ({ data, boundaries, boundaryGrid, task, selectedRegion }) =
             .attr("cy", d => yScale(d.y))
             .attr("r", 6)
             .attr("fill", d => {
-                 if (task === 'regression') return d3.interpolateRdBu((d.y + 1) / 2); // Use Y for color in regression or logic? Actually usually regression color is target value.
-                 // For now, assume regression target isn't plotted as color unless 3rd dim.
-                 // Wait, for regression, color usually maps to residual or value.
-                 // Let's stick to standard class coloring for classification.
+                 if (task === 'regression' && colorScale) {
+                     return colorScale(d.label);
+                 }
                  return d.label === 1 ? THEME.class1.point : THEME.class0.point;
             })
             .attr("stroke", "white")
             .attr("stroke-width", 2)
             .style("filter", "url(#glow)") // Add glow
-            .attr("class", "transition-all hover:r-8 cursor-crosshair");
+            .attr("class", "transition-all hover:r-8 cursor-crosshair")
+            .append("title")
+            .text(d => `X: ${d.x.toFixed(2)}, Y: ${d.y.toFixed(2)}, Label: ${d.label.toFixed(2)}`);
 
         // --- 4. Selection Highlight ---
         if (selectedRegion) {
@@ -200,7 +215,7 @@ const ScatterPlot = ({ data, boundaries, boundaryGrid, task, selectedRegion }) =
                 .attr("opacity", 1);
         }
 
-    }, [data, boundaries, boundaryGrid, xScale, yScale, innerWidth, innerHeight, margin, task, selectedRegion]);
+    }, [data, boundaries, boundaryGrid, xScale, yScale, innerWidth, innerHeight, margin, task, selectedRegion, colorScale]);
 
     return (
         <div ref={containerRef} className="w-full h-full min-h-[400px] relative bg-white">
