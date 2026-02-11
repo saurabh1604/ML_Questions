@@ -28,10 +28,10 @@ function App() {
     const [error, setError] = useState(null);
     const [ensembleTreeIndex, setEnsembleTreeIndex] = useState(0);
 
-    // Initial load
+    // Handle Data Generation (Initial + Change)
     useEffect(() => {
         handleGenerateData();
-    }, []);
+    }, [datasetType]); // Regenerate when type changes
 
     // Reset Model & Selection on Algo/Dataset change
     useEffect(() => {
@@ -165,9 +165,15 @@ function App() {
                                 <h3 className="font-bold text-slate-700 text-lg">Feature Space</h3>
                                 <p className="text-xs text-slate-400 mt-0.5">Visualizing Decision Boundaries</p>
                             </div>
-                            <div className="flex gap-2">
-                                <span className="w-3 h-3 rounded-full bg-blue-500 block" title="Class 0"></span>
-                                <span className="w-3 h-3 rounded-full bg-red-500 block" title="Class 1"></span>
+                            <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-3 h-3 rounded-full bg-blue-600 border border-white shadow-sm"></span>
+                                    <span>Class 0</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-3 h-3 rounded-full bg-red-600 border border-white shadow-sm"></span>
+                                    <span>Class 1</span>
+                                </div>
                             </div>
                         </div>
                         <div className="flex-1 relative bg-white rounded-b-xl overflow-hidden min-h-[500px]">

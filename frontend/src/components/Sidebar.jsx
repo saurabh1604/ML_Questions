@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Database, Cpu, Activity, Info, BarChart } from 'lucide-react';
+import { Settings, Database, Cpu, Activity, Info, BarChart, HelpCircle } from 'lucide-react';
 
 const Sidebar = ({
     datasetType, setDatasetType,
@@ -25,8 +25,11 @@ const Sidebar = ({
                     <Database className="w-4 h-4" /> Data Config
                 </h2>
 
-                <div className="space-y-1">
-                    <label className="text-sm font-medium text-slate-700">Dataset Type</label>
+                <div className="space-y-1 group relative">
+                    <label className="text-sm font-medium text-slate-700 flex items-center gap-1">
+                        Dataset Type
+                        <HelpCircle className="w-3 h-3 text-slate-300 cursor-help" />
+                    </label>
                     <select
                         value={datasetType}
                         onChange={(e) => setDatasetType(e.target.value)}
@@ -52,6 +55,7 @@ const Sidebar = ({
                         onChange={(e) => setNoise(parseFloat(e.target.value))}
                         className="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                     />
+                    <p className="text-[10px] text-slate-400 mt-1">Adds randomness to data points to simulate real-world errors.</p>
                 </div>
 
                 <button
@@ -88,7 +92,7 @@ const Sidebar = ({
                 </div>
 
                 <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm items-center">
                         <label className="font-medium text-slate-700">Max Depth</label>
                         <span className="text-slate-500">{params.max_depth}</span>
                     </div>
@@ -99,10 +103,11 @@ const Sidebar = ({
                         onChange={(e) => setParams({...params, max_depth: parseInt(e.target.value)})}
                         className="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                     />
+                    <p className="text-[10px] text-slate-400 mt-0.5">Limits tree height to prevent overfitting.</p>
                 </div>
 
                 <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm items-center">
                         <label className="font-medium text-slate-700">Min Samples Split</label>
                         <span className="text-slate-500">{params.min_samples_split}</span>
                     </div>
@@ -113,6 +118,7 @@ const Sidebar = ({
                         onChange={(e) => setParams({...params, min_samples_split: parseInt(e.target.value)})}
                         className="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                     />
+                    <p className="text-[10px] text-slate-400 mt-0.5">Minimum points required to create a new split.</p>
                 </div>
 
                 {algoType === 'tree' && datasetType !== 'regression' && (
@@ -126,6 +132,7 @@ const Sidebar = ({
                             <option value="gini">Gini Impurity</option>
                             <option value="entropy">Entropy</option>
                         </select>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Method to measure split quality.</p>
                     </div>
                 )}
 
@@ -142,6 +149,7 @@ const Sidebar = ({
                             onChange={(e) => setParams({...params, n_estimators: parseInt(e.target.value)})}
                             className="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                         />
+                        <p className="text-[10px] text-slate-400 mt-0.5">Number of trees in the ensemble.</p>
                     </div>
                 )}
 
