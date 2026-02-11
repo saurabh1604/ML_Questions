@@ -109,9 +109,9 @@ function App() {
     const currentTreeStructure = getTreeStructure();
 
     return (
-        <div className="flex min-h-screen bg-slate-50 font-sans">
+        <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
             {/* Sidebar - Sticky */}
-            <div className="sticky top-0 h-screen overflow-y-auto shrink-0 z-20">
+            <div className="sticky top-0 h-screen overflow-y-auto shrink-0 z-30 shadow-xl shadow-slate-200/50 border-r border-slate-100">
                 <Sidebar
                     datasetType={datasetType} setDatasetType={setDatasetType}
                     noise={noise} setNoise={setNoise}
@@ -122,62 +122,86 @@ function App() {
                 />
             </div>
 
-            <main className="flex-1 p-8 flex flex-col gap-8 w-full overflow-x-hidden">
+            <main className="flex-1 p-8 flex flex-col gap-8 w-full overflow-x-hidden relative">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none"
+                     style={{ backgroundImage: 'radial-gradient(#475569 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
+                </div>
+
                 {/* Header Stats */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex justify-between items-center bg-white/90 backdrop-blur p-6 rounded-2xl shadow-sm border border-slate-100 shrink-0"
+                    className="relative z-10 flex justify-between items-center bg-white p-8 rounded-3xl shadow-sm border border-slate-100/60"
                 >
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
+                        <h2 className="text-3xl font-bold text-slate-800 tracking-tight">
                             {algoType === 'tree' ? 'Decision Tree Analysis' :
                              algoType === 'forest' ? 'Random Forest Ensemble' : 'Gradient Boosting Machine'}
                         </h2>
-                        <p className="text-sm text-slate-500 mt-1">
-                            Task: <span className="font-semibold uppercase text-slate-700">{datasetType === 'regression' ? 'Regression' : 'Classification'}</span>
-                            <span className="mx-2">•</span>
+                        <p className="text-sm text-slate-500 mt-2 font-medium">
+                            Task: <span className="uppercase text-slate-800 tracking-wide">{datasetType === 'regression' ? 'Regression' : 'CLASSIFICATION'}</span>
+                            <span className="mx-3 text-slate-300">•</span>
                             <span>Explore the mathematical intuition behind the algorithm.</span>
                         </p>
                     </div>
-                    <div className="flex items-center gap-6">
-                        {loading && <span className="text-indigo-600 font-medium animate-pulse flex items-center gap-2"><span className="w-2 h-2 bg-indigo-600 rounded-full animate-ping"></span> Training...</span>}
-                        {error && <span className="text-rose-500 font-semibold text-sm bg-rose-50 px-3 py-1 rounded-full">{error}</span>}
+
+                    <div className="flex items-center gap-8">
+                         {/* Status Indicators */}
+                         <div className="flex flex-col items-end gap-1">
+                            {loading && (
+                                <span className="flex items-center gap-2 text-indigo-600 font-semibold text-sm bg-indigo-50 px-3 py-1.5 rounded-full animate-pulse">
+                                    <span className="w-2 h-2 bg-indigo-600 rounded-full animate-ping"></span>
+                                    Training Model...
+                                </span>
+                            )}
+                            {error && (
+                                <span className="text-rose-600 font-semibold text-xs bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-full max-w-xs truncate" title={error}>
+                                    Error: {error}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Score Card */}
                         {modelResult && (
-                            <div className="text-right">
-                                <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Model Score</p>
-                                <p className="text-3xl font-bold text-emerald-600 tabular-nums">{modelResult.score?.toFixed(4)}</p>
+                            <div className="text-right bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100">
+                                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-0.5">Model Score</p>
+                                <p className="text-4xl font-black text-emerald-500 tabular-nums tracking-tight">
+                                    {modelResult.score?.toFixed(4)}
+                                </p>
                             </div>
                         )}
                     </div>
                 </motion.div>
 
                 {/* Main Visualizations Grid - Large Height */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 min-h-[600px] lg:min-h-[70vh]">
-                    {/* Scatter Plot */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 min-h-[600px] lg:min-h-[70vh] relative z-10">
+                    {/* Scatter Plot Card */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white p-1 rounded-2xl shadow-lg border border-slate-100 flex flex-col overflow-hidden ring-1 ring-slate-900/5"
+                        className="bg-white p-2 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col overflow-hidden ring-1 ring-slate-900/5 group hover:shadow-2xl transition-shadow duration-500"
                     >
-                        <div className="p-5 border-b border-slate-50 flex justify-between items-center shrink-0 bg-slate-50/30">
+                        <div className="px-6 py-5 border-b border-slate-50 flex justify-between items-center shrink-0">
                             <div>
-                                <h3 className="font-bold text-slate-700 text-lg">Feature Space</h3>
-                                <p className="text-xs text-slate-400 mt-0.5">Visualizing Decision Boundaries</p>
+                                <h3 className="font-bold text-slate-800 text-lg">Feature Space</h3>
+                                <p className="text-xs text-slate-400 mt-1 font-medium">Visualizing Decision Boundaries</p>
                             </div>
-                            <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="w-3 h-3 rounded-full bg-blue-600 border border-white shadow-sm"></span>
-                                    <span>Class 0</span>
+
+                            {/* Legend */}
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow-sm ring-1 ring-blue-100"></span>
+                                    <span className="text-xs font-semibold text-slate-500">Class 0</span>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="w-3 h-3 rounded-full bg-red-600 border border-white shadow-sm"></span>
-                                    <span>Class 1</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded-full bg-rose-500 border-2 border-white shadow-sm ring-1 ring-rose-100"></span>
+                                    <span className="text-xs font-semibold text-slate-500">Class 1</span>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex-1 relative bg-white rounded-b-xl overflow-hidden min-h-[500px]">
-                             {/* Container for ScatterPlot. Pass key to force re-render if needed. */}
+
+                        <div className="flex-1 relative bg-white rounded-b-2xl overflow-hidden min-h-[500px]">
                             <ScatterPlot
                                 data={data}
                                 boundaries={modelResult?.boundaries}
@@ -188,43 +212,48 @@ function App() {
                         </div>
                     </motion.div>
 
-                    {/* Tree Viz */}
+                    {/* Tree Viz Card */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.1 }}
-                        className="bg-white p-1 rounded-2xl shadow-lg border border-slate-100 flex flex-col overflow-hidden ring-1 ring-slate-900/5"
+                        className="bg-white p-2 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col overflow-hidden ring-1 ring-slate-900/5 group hover:shadow-2xl transition-shadow duration-500"
                     >
-                        <div className="p-5 border-b border-slate-50 flex justify-between items-center shrink-0 bg-slate-50/30">
+                        <div className="px-6 py-5 border-b border-slate-50 flex justify-between items-center shrink-0">
                             <div>
-                                <h3 className="font-bold text-slate-700 text-lg">Tree Structure</h3>
-                                <p className="text-xs text-slate-400 mt-0.5">
+                                <h3 className="font-bold text-slate-800 text-lg">Tree Structure</h3>
+                                <p className="text-xs text-slate-400 mt-1 font-medium">
                                     {algoType === 'tree' ? 'Interactive Hierarchy - Click nodes to inspect' : 'Ensemble Component Viewer'}
                                 </p>
                             </div>
-                            <span className="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">Zoom & Pan Enabled</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-3 py-1.5 rounded-lg border border-slate-200">
+                                Zoom & Pan <span className="text-emerald-500 ml-1">Enabled</span>
+                            </span>
                         </div>
 
-                        <div className="flex-1 relative bg-slate-50/50 rounded-b-xl overflow-hidden min-h-[500px]">
+                        <div className="flex-1 relative bg-slate-50/30 rounded-b-2xl overflow-hidden min-h-[500px]">
                             {modelResult ? (
                                 <>
                                     {/* Ensemble Controls Overlay */}
                                     {(algoType === 'forest' || algoType === 'boosting') && modelResult?.trees && (
-                                        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 bg-white/90 backdrop-blur shadow-lg border border-slate-200 rounded-full px-4 py-2 flex items-center gap-3">
+                                        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 bg-white/80 backdrop-blur-md shadow-lg border border-slate-200/60 rounded-full pl-2 pr-2 py-1.5 flex items-center gap-2 transition-all hover:scale-105">
                                             <button
                                                 onClick={() => setEnsembleTreeIndex(i => Math.max(0, i - 1))}
                                                 disabled={ensembleTreeIndex === 0}
-                                                className="p-1.5 hover:bg-slate-100 rounded-full disabled:opacity-30 text-slate-600 transition"
+                                                className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full disabled:opacity-30 text-slate-600 transition disabled:cursor-not-allowed"
                                             >
                                                 &larr;
                                             </button>
-                                            <span className="text-sm font-mono font-bold text-slate-700 min-w-[100px] text-center">
-                                                Tree {ensembleTreeIndex + 1} / {modelResult.trees.length}
-                                            </span>
+                                            <div className="flex flex-col items-center px-4 border-x border-slate-100">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tree</span>
+                                                <span className="text-sm font-mono font-bold text-slate-700 min-w-[20px] text-center leading-none">
+                                                    {ensembleTreeIndex + 1} <span className="text-slate-300 font-light mx-1">/</span> {modelResult.trees.length}
+                                                </span>
+                                            </div>
                                             <button
                                                 onClick={() => setEnsembleTreeIndex(i => Math.min(modelResult.trees.length - 1, i + 1))}
                                                 disabled={ensembleTreeIndex === modelResult.trees.length - 1}
-                                                className="p-1.5 hover:bg-slate-100 rounded-full disabled:opacity-30 text-slate-600 transition"
+                                                className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full disabled:opacity-30 text-slate-600 transition disabled:cursor-not-allowed"
                                             >
                                                 &rarr;
                                             </button>
@@ -241,9 +270,9 @@ function App() {
                                     />
                                 </>
                             ) : (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-4">
-                                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-3xl">🌲</div>
-                                    <p className="font-medium">Train a model to see its structure</p>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-6 animate-pulse">
+                                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center text-4xl shadow-inner">🌲</div>
+                                    <p className="font-medium text-slate-500">Train a model to reveal its structure</p>
                                 </div>
                             )}
                         </div>
@@ -255,11 +284,11 @@ function App() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden shrink-0 ring-1 ring-slate-900/5 min-h-[400px]"
+                    className="bg-white rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden shrink-0 ring-1 ring-slate-900/5 min-h-[400px] relative z-10"
                 >
-                    <div className="p-6 border-b border-slate-50 bg-slate-50/30">
-                        <h3 className="font-bold text-slate-800 text-lg">Mathematical Analysis</h3>
-                        <p className="text-sm text-slate-500">Detailed breakdown of the splitting criteria and information gain.</p>
+                    <div className="p-8 border-b border-slate-50 bg-slate-50/50">
+                        <h3 className="font-bold text-slate-800 text-xl">Mathematical Analysis</h3>
+                        <p className="text-sm text-slate-500 mt-1">Detailed breakdown of the splitting criteria and information gain.</p>
                     </div>
                     <div className="p-0">
                         <StepByStepMath selectedNode={selectedNode} />

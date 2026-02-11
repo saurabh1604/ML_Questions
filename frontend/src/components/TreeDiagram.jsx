@@ -1,216 +1,253 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { useResizeObserver } from '../hooks/useResizeObserver';
-import { RefreshCw, Minus, Plus } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, RotateCcw } from 'lucide-react';
 
-// Awesome Theme Colors
+// Awesome Theme
 const THEME = {
-    class0: '#3B82F6', // Blue 500
-    class1: '#EF4444', // Red 500
-    stroke: '#CBD5E1', // Slate 300
-    text: '#475569',   // Slate 600
-    selected: '#10B981', // Emerald 500
-    selectedStroke: '#059669' // Emerald 600
+    class0: { fill: '#EFF6FF', stroke: '#3B82F6', text: '#1E3A8A' }, // Blue
+    class1: { fill: '#FEF2F2', stroke: '#EF4444', text: '#991B1B' }, // Red
+    neutral: { fill: '#F8FAFC', stroke: '#94A3B8', text: '#475569' }, // Slate
+    link: '#CBD5E1',
+    text: '#64748B'
 };
 
-const TreeDiagram = ({ structure, task, onNodeClick, selectedNode, dataDomain }) => {
+const TreeDiagram = ({ structure, task, onNodeClick, selectedNode }) => {
     const containerRef = useRef(null);
     const dimensions = useResizeObserver(containerRef);
     const svgRef = useRef(null);
-    const gRef = useRef(null);
 
-    // Setup Zoom (Run once)
+    // Transform state for zoom/pan
+    const [transform, setTransform] = useState(d3.zoomIdentity);
+
+    // Node Dimensions
+    const nodeWidth = 140;
+    const nodeHeight = 70;
+    const xSpacing = 160;
+    const ySpacing = 100;
+
+    // Process Tree Data with Memoization
+    const root = useMemo(() => {
+        if (!structure) return null;
+        const hierarchy = d3.hierarchy(structure);
+        const treeLayout = d3.tree().nodeSize([nodeWidth + 20, ySpacing + 20]);
+        return treeLayout(hierarchy);
+    }, [structure, nodeWidth, ySpacing]);
+
+    // Setup Zoom
     useEffect(() => {
-        if (!svgRef.current || !gRef.current) return;
-
-        const svg = d3.select(svgRef.current);
-        const g = d3.select(gRef.current);
-
-        const zoomBehavior = d3.zoom()
-            .scaleExtent([0.1, 4])
-            .on("zoom", (event) => {
-                g.attr("transform", event.transform);
-            });
-
-        svg.call(zoomBehavior);
-    }, []);
-
-    const handleZoom = (factor) => {
         if (!svgRef.current) return;
         const svg = d3.select(svgRef.current);
-        svg.transition().duration(300).call(d3.zoom().scaleBy, factor);
-    };
 
-    const resetZoom = () => {
-        if (!svgRef.current || !dimensions) return;
-        const svg = d3.select(svgRef.current);
-        svg.transition().duration(750).call(
-            d3.zoom().transform,
-            d3.zoomIdentity.translate(dimensions.width/2, 50).scale(1)
-        );
-    };
-
-    // Draw Tree Structure
-    useEffect(() => {
-        if (!structure || !dimensions || !gRef.current) return;
-
-        const { width, height } = dimensions;
-        if (width === 0 || height === 0) return;
-
-        const g = d3.select(gRef.current);
-
-        // Clear previous tree
-        g.selectAll("*").remove();
-
-        // 1. Process Data
-        const root = d3.hierarchy(structure);
-
-        // 2. Layout
-        const nodeWidth = 70;
-        const nodeHeight = 80;
-        const treeLayout = d3.tree().nodeSize([nodeWidth, nodeHeight]);
-        treeLayout(root);
-
-        // 3. Draw Links (Curved)
-        const linkPath = d3.linkVertical()
-            .x(d => d.x)
-            .y(d => d.y);
-
-        g.append("g").attr("class", "links")
-            .selectAll(".link")
-            .data(root.links())
-            .enter()
-            .append("path")
-            .attr("class", "link")
-            .attr("d", linkPath)
-            .attr("fill", "none")
-            .attr("stroke", THEME.stroke)
-            .attr("stroke-width", 2)
-            .attr("opacity", 0.6);
-
-        // 4. Draw Nodes
-        const nodesG = g.append("g").attr("class", "nodes");
-
-        const nodeGroups = nodesG.selectAll(".node")
-            .data(root.descendants())
-            .enter()
-            .append("g")
-            .attr("class", "node cursor-pointer transition-opacity")
-            .attr("transform", d => `translate(${d.x},${d.y})`)
-            .on("click", (event, d) => {
-                event.stopPropagation();
-                if (onNodeClick) onNodeClick(d.data);
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 3])
+            .on("zoom", (event) => {
+                setTransform(event.transform);
             });
 
-        // Node Circle (Base)
-        nodeGroups.append("circle")
-            .attr("r", 10)
-            .attr("fill", d => {
-                if (task === 'regression') return "#60A5FA";
-                const counts = d.data.value || [0, 0];
-                const total = counts[0] + counts[1];
-                const p1 = total > 0 ? counts[1] / total : 0;
-                return p1 > 0.5 ? THEME.class1 : THEME.class0;
-            })
-            .attr("stroke", "#ffffff")
-            .attr("stroke-width", 2)
-            .attr("class", "node-circle shadow-sm");
+        svg.call(zoom);
 
-        // Labels (Condition)
-        const labelGroup = nodeGroups.append("g")
-            .attr("transform", "translate(0, -18)");
+        // Center initial tree
+        if (dimensions && root) {
+            const initialScale = 0.8;
+            const xOffset = dimensions.width / 2 - root.x * initialScale; // Center root
+            const yOffset = 50;
 
-        labelGroup.append("text")
-            .attr("text-anchor", "middle")
-            .attr("fill", THEME.text)
-            .style("font-family", "Inter, sans-serif")
-            .style("font-weight", "600")
-            .style("font-size", "11px")
-            .text(d => {
-                if (!d.children) return "";
-                return d.data.feature === 0
-                    ? `X ≤ ${d.data.threshold.toFixed(2)}`
-                    : `Y ≤ ${d.data.threshold.toFixed(2)}`;
-            })
-            .call(text => text.clone(true).lower()
-                .attr("stroke", "white")
-                .attr("stroke-width", 3)
-                .attr("stroke-linejoin", "round")
+            svg.transition().duration(750).call(
+                zoom.transform,
+                d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
             );
-
-        // Leaf Labels
-        nodeGroups.filter(d => !d.children).append("text")
-            .attr("dy", "24")
-            .attr("text-anchor", "middle")
-            .attr("fill", "#94a3b8")
-            .style("font-family", "Inter, sans-serif")
-            .style("font-size", "10px")
-            .style("font-weight", "500")
-            .text(d => {
-                 if (task === 'regression') return d.data.value[0]?.toFixed(2);
-                 const counts = d.data.value || [0, 0];
-                 return counts[1] > counts[0] ? "Class 1" : "Class 0";
-            });
-
-    }, [structure, dimensions, task]); // Only redraw if structure changes
-
-    // Update Selection (Separate Effect)
-    useEffect(() => {
-        if (!gRef.current) return;
-        const g = d3.select(gRef.current);
-
-        g.selectAll(".node circle")
-            .transition().duration(200)
-            .attr("stroke", function(d) {
-                // Check if this node is selected
-                // d is the hierarchy node, d.data is the raw data
-                const isSelected = selectedNode && (d.data === selectedNode || d.data.id === selectedNode.id);
-                return isSelected ? THEME.selectedStroke : "#ffffff";
-            })
-            .attr("stroke-width", function(d) {
-                const isSelected = selectedNode && (d.data === selectedNode || d.data.id === selectedNode.id);
-                return isSelected ? 4 : 2;
-            })
-            .attr("r", function(d) {
-                const isSelected = selectedNode && (d.data === selectedNode || d.data.id === selectedNode.id);
-                return isSelected ? 12 : 10;
-            });
-
-    }, [selectedNode]);
-
-    // Initial Centering
-    useEffect(() => {
-        if (structure && dimensions && svgRef.current) {
-             const svg = d3.select(svgRef.current);
-             // Reset zoom to center
-             svg.call(d3.zoom().transform, d3.zoomIdentity.translate(dimensions.width / 2, 50).scale(1));
         }
-    }, [structure, dimensions?.width]);
+
+    }, [dimensions, root]);
+
+    // Manual Zoom Handlers
+    const handleZoom = (factor) => {
+        if (!svgRef.current) return;
+        d3.select(svgRef.current).transition().call(d3.zoom().scaleBy, factor);
+    };
+
+    const handleReset = () => {
+         if (!svgRef.current || !dimensions || !root) return;
+         const svg = d3.select(svgRef.current);
+         const initialScale = 0.8;
+         const xOffset = dimensions.width / 2;
+         const yOffset = 50;
+         svg.transition().duration(750).call(
+            d3.zoom().transform,
+            d3.zoomIdentity.translate(xOffset, yOffset).scale(initialScale)
+         );
+    };
+
+    if (!structure) return (
+        <div ref={containerRef} className="w-full h-full min-h-[400px] flex items-center justify-center bg-slate-50 text-slate-400">
+             <p>No model structure available.</p>
+        </div>
+    );
 
     return (
-        <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-slate-50/30">
+        <div ref={containerRef} className="w-full h-full min-h-[500px] relative bg-slate-50 overflow-hidden">
             <svg ref={svgRef} className="w-full h-full block cursor-grab active:cursor-grabbing">
-                <g ref={gRef}></g>
+                <g transform={transform.toString()}>
+
+                    {/* Links */}
+                    <g className="links">
+                        {root.links().map((link, i) => {
+                            const d = d3.linkVertical()
+                                .x(d => d.x)
+                                .y(d => d.y)
+                                (link);
+                            return (
+                                <path
+                                    key={i}
+                                    d={d}
+                                    fill="none"
+                                    stroke={THEME.link}
+                                    strokeWidth={2}
+                                    className="transition-all duration-500 ease-in-out"
+                                />
+                            );
+                        })}
+                    </g>
+
+                    {/* Nodes */}
+                    <g className="nodes">
+                        {root.descendants().map((node, i) => {
+                            const isLeaf = !node.children;
+                            const isSelected = selectedNode && (node.data === selectedNode || node.data.id === selectedNode.id);
+
+                            // Determine Color
+                            let style = THEME.neutral;
+                            if (task === 'classification') {
+                                const counts = node.data.value || [0, 0];
+                                const p1 = (counts[0] + counts[1] > 0) ? counts[1] / (counts[0] + counts[1]) : 0;
+                                style = p1 > 0.5 ? THEME.class1 : THEME.class0;
+                            } else {
+                                // Regression: could map value to color intensity
+                            }
+
+                            return (
+                                <g
+                                    key={i}
+                                    transform={`translate(${node.x},${node.y})`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onNodeClick && onNodeClick(node.data);
+                                    }}
+                                    className={`cursor-pointer transition-all duration-300 ${isSelected ? 'scale-110' : 'hover:scale-105'}`}
+                                >
+                                    {/* Shadow for depth */}
+                                    <rect
+                                        x={-nodeWidth / 2}
+                                        y={0}
+                                        width={nodeWidth}
+                                        height={nodeHeight}
+                                        rx={12}
+                                        fill="#000"
+                                        opacity={0.05}
+                                        transform="translate(4, 4)"
+                                    />
+
+                                    {/* Main Card */}
+                                    <rect
+                                        x={-nodeWidth / 2}
+                                        y={0}
+                                        width={nodeWidth}
+                                        height={nodeHeight}
+                                        rx={12}
+                                        fill="white"
+                                        stroke={isSelected ? '#10B981' : style.stroke}
+                                        strokeWidth={isSelected ? 3 : 1.5}
+                                        className="shadow-sm"
+                                    />
+
+                                    {/* Header Strip (Gini/Entropy) */}
+                                    <path
+                                        d={`M ${-nodeWidth/2} 0 Q ${-nodeWidth/2} 0, ${-nodeWidth/2} 0 L ${nodeWidth/2} 0 Q ${nodeWidth/2} 0, ${nodeWidth/2} 0 L ${nodeWidth/2} 24 L ${-nodeWidth/2} 24 Z`}
+                                        // Rounded top corners manually or just clip
+                                        // Simpler: Just a rect at top
+                                    />
+                                     <rect
+                                        x={-nodeWidth / 2}
+                                        y={0}
+                                        width={nodeWidth}
+                                        height={24}
+                                        rx={12} // Rounded all
+                                        fill={style.fill}
+                                        clipPath="inset(0 0 10px 0)" // Clip bottom to make it flat? No, standard rect is fine
+                                    />
+                                     <rect
+                                        x={-nodeWidth / 2}
+                                        y={10}
+                                        width={nodeWidth}
+                                        height={14}
+                                        fill={style.fill} // Filler to flatten bottom corners
+                                    />
+
+                                    {/* Header Text */}
+                                    <text
+                                        y={16}
+                                        textAnchor="middle"
+                                        fontSize="10"
+                                        fontWeight="bold"
+                                        fill={style.text}
+                                        className="uppercase tracking-wider"
+                                    >
+                                        {isLeaf ? (task === 'regression' ? `Val: ${node.data.value[0]?.toFixed(2)}` : `Class ${style === THEME.class1 ? '1' : '0'}`) :
+                                         node.data.feature === 0 ? 'Feature X' : 'Feature Y'}
+                                    </text>
+
+                                    {/* Body Text */}
+                                    <g transform="translate(0, 40)">
+                                        {!isLeaf ? (
+                                            <>
+                                                <text textAnchor="middle" fontSize="14" fontWeight="bold" fill="#334155">
+                                                    ≤ {node.data.threshold?.toFixed(2)}
+                                                </text>
+                                                <text y={16} textAnchor="middle" fontSize="9" fill="#94A3B8">
+                                                    {node.data.impurity ? `Impurity: ${node.data.impurity.toFixed(2)}` : ''}
+                                                </text>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <text textAnchor="middle" fontSize="12" fontWeight="bold" fill="#334155">
+                                                    {task === 'regression' ? '' : `Ratio: ${(node.data.value[1] / (node.data.value[0] + node.data.value[1])).toFixed(2)}`}
+                                                </text>
+                                                <text y={16} textAnchor="middle" fontSize="9" fill="#94A3B8">
+                                                    Samples: {node.data.samples}
+                                                </text>
+                                            </>
+                                        )}
+                                    </g>
+
+                                    {/* Connector Dot for Incoming Link */}
+                                    {node.parent && (
+                                        <circle cx={0} cy={0} r={4} fill={THEME.link} stroke="white" strokeWidth={2} />
+                                    )}
+
+                                    {/* Connector Dot for Outgoing Link */}
+                                    {!isLeaf && (
+                                        <circle cx={0} cy={nodeHeight} r={4} fill={THEME.link} stroke="white" strokeWidth={2} />
+                                    )}
+                                </g>
+                            );
+                        })}
+                    </g>
+                </g>
             </svg>
 
-            <div className="absolute bottom-4 right-4 flex flex-col gap-1.5 bg-white/90 backdrop-blur shadow-sm rounded-lg p-1.5 border border-slate-200">
-                <button onClick={() => handleZoom(1.2)} className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded transition" title="Zoom In">
-                    <Plus className="w-4 h-4" />
+            {/* Controls */}
+            <div className="absolute bottom-6 right-6 flex flex-col gap-2">
+                 <button onClick={() => handleZoom(1.2)} className="bg-white p-2 rounded-full shadow-lg text-slate-600 hover:text-indigo-600 hover:scale-110 transition-all border border-slate-100">
+                    <ZoomIn className="w-5 h-5" />
                 </button>
-                <button onClick={() => handleZoom(0.8)} className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded transition" title="Zoom Out">
-                    <Minus className="w-4 h-4" />
+                <button onClick={() => handleZoom(0.8)} className="bg-white p-2 rounded-full shadow-lg text-slate-600 hover:text-indigo-600 hover:scale-110 transition-all border border-slate-100">
+                    <ZoomOut className="w-5 h-5" />
                 </button>
-                <div className="h-px bg-slate-200 my-0.5"></div>
-                <button onClick={resetZoom} className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded transition" title="Reset View">
-                    <RefreshCw className="w-4 h-4" />
+                <button onClick={handleReset} className="bg-white p-2 rounded-full shadow-lg text-slate-600 hover:text-indigo-600 hover:scale-110 transition-all border border-slate-100">
+                    <RotateCcw className="w-5 h-5" />
                 </button>
             </div>
-
-             {!structure && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-2">
-                    <p className="text-sm font-medium">No model structure</p>
-                </div>
-            )}
         </div>
     );
 };
