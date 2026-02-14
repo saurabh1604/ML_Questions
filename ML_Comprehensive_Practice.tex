@@ -1,0 +1,675 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\geometry{a4paper, margin=1in}
+
+\title{Comprehensive Machine Learning Practice Set}
+\author{Based on Course Handout and Slides}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction and Machine Learning Workflow}
+\subsection*{Question 1 (Introduction/Workflow)}
+\textbf{Problem:} A credit card company wants to detect fraudulent transactions. They have a dataset of past transactions labeled as 'fraud' or 'legitimate'. What type of machine learning problem is this? If they had no labels and just wanted to group similar transactions together to find anomalies, what type would it be?
+
+\textbf{Solution:} The first scenario is a **Supervised Learning** problem, specifically **Classification**, because the goal is to predict a discrete label ('fraud' or 'legitimate') based on past labeled examples. The second scenario is an **Unsupervised Learning** problem, specifically **Clustering** or **Anomaly Detection**, because the goal is to find hidden structures or groups in the data without predefined labels.
+
+\subsection*{Question 2 (Introduction/Workflow)}
+\textbf{Problem:} Given a feature $x$ with values $\{10, 20, 30, 40, 50\}$. Perform Min-Max Normalization to scale these values to the range $[0, 1]$. What is the normalized value of 30?
+
+\textbf{Solution:} Min-Max Normalization formula: $x_{norm} = \frac{x - x_{min}}{x_{max} - x_{min}}$.
+Here, $x_{min} = 10$ and $x_{max} = 50$.
+For $x=30$: $x_{norm} = \frac{30 - 10}{50 - 10} = \frac{20}{40} = 0.5$.
+
+\subsection*{Question 3 (Introduction/Workflow)}
+\textbf{Problem:} Given a dataset with mean $\mu = 50$ and standard deviation $\sigma = 5$. Calculate the Z-score standardization for a data point with value $x = 65$. What does this Z-score indicate?
+
+\textbf{Solution:} Z-score formula: $z = \frac{x - \mu}{\sigma}$.
+For $x=65$: $z = \frac{65 - 50}{5} = \frac{15}{5} = 3$.
+This indicates that the value 65 is 3 standard deviations above the mean.
+
+\subsection*{Question 4 (Introduction/Workflow)}
+\textbf{Problem:} Explain the 'Curse of Dimensionality' in the context of distance-based algorithms like K-Nearest Neighbors (KNN). Why does increasing the number of features potentially degrade performance?
+
+\textbf{Solution:} The Curse of Dimensionality refers to the phenomena that arise when analyzing data in high-dimensional spaces. As the number of dimensions (features) increases, the volume of the space increases exponentially, and the data becomes sparse. In distance-based algorithms like KNN, the concept of 'nearest' becomes less meaningful because the distance between any two points tends to become equidistant (the ratio of the distance to the nearest neighbor to the distance to the farthest neighbor approaches 1). This makes it difficult for the algorithm to distinguish between relevant and irrelevant points, degrading performance.
+
+\subsection*{Question 5 (Introduction/Workflow)}
+\textbf{Problem:} In a Principal Component Analysis (PCA), the eigenvalues of the covariance matrix are $\lambda_1 = 4.0$, $\lambda_2 = 2.0$, and $\lambda_3 = 0.5$. Calculate the proportion of total variance explained by the first two principal components.
+
+\textbf{Solution:} Total variance is the sum of eigenvalues: $\lambda_{total} = 4.0 + 2.0 + 0.5 = 6.5$.
+Variance explained by PC1 and PC2: $\lambda_1 + \lambda_2 = 4.0 + 2.0 = 6.0$.
+Proportion explained: $\frac{6.0}{6.5} \approx 0.923$ or $92.3\%$.
+
+\subsection*{Question 6 (Introduction/Workflow)}
+\textbf{Problem:} Why is it necessary to split data into Training, Validation, and Test sets? Why can't we just use Training and Test sets?
+
+\textbf{Solution:} The **Training set** is used to fit the model parameters. The **Validation set** is used to tune hyperparameters (like learning rate, regularization strength, or tree depth) and perform model selection without looking at the final test data. If we use the **Test set** for tuning, we are effectively 'training' on the test data, leading to data leakage and an optimistic bias in our performance evaluation. The Test set should only be used once for the final evaluation of the selected model to estimate its generalization error on unseen data.
+
+\subsection*{Question 7 (Introduction/Workflow)}
+\textbf{Problem:} Describe two techniques to handle an imbalanced dataset where the positive class is very rare (e.g., 1\% of data).
+
+\textbf{Solution:} Two common techniques are:
+1. **Resampling**:
+   - **Undersampling**: Randomly removing examples from the majority class to balance the ratio.
+   - **Oversampling**: Randomly duplicating examples from the minority class or generating synthetic examples (e.g., SMOTE - Synthetic Minority Over-sampling Technique).
+2. **Cost-sensitive Learning**: Modifying the algorithm to penalize misclassifications of the minority class more heavily than the majority class (e.g., using class weights in the loss function).
+
+\subsection*{Question 8 (Introduction/Workflow)}
+\textbf{Problem:} Given the feature values $F = \{2, 4, \text{NaN}, 8, 10, \text{NaN}\}$.
+a) Impute the missing values using the Mean.
+b) Impute the missing values using the Median.
+
+\textbf{Solution:} Observed values: $\{2, 4, 8, 10\}$.
+a) **Mean**: $\frac{2+4+8+10}{4} = \frac{24}{4} = 6$. Imputed set: $\{2, 4, \mathbf{6}, 8, 10, \mathbf{6}\}$.
+b) **Median**: Sorted values are $\{2, 4, 8, 10\}$. Median is average of 4 and 8: $\frac{4+8}{2} = 6$. Imputed set: $\{2, 4, \mathbf{6}, 8, 10, \mathbf{6}\}$.
+
+\subsection*{Question 9 (Introduction/Workflow)}
+\textbf{Problem:} You train a decision tree and observe the following: Training Accuracy = 99\%, Validation Accuracy = 65\%. What problem is the model suffering from? Suggest two ways to fix it.
+
+\textbf{Solution:} The large gap between Training Accuracy (high) and Validation Accuracy (low) indicates **Overfitting**. The model has memorized the training noise rather than learning the underlying pattern.
+Ways to fix it:
+1. **Pruning**: Limit the depth of the tree or set a minimum number of samples per leaf (Pre-pruning) or remove branches that don't add predictive power (Post-pruning).
+2. **More Data**: Collecting more training data can help the model generalize better.
+
+\subsection*{Question 10 (Introduction/Workflow)}
+\textbf{Problem:} You are using a K-Nearest Neighbors (KNN) algorithm and a Decision Tree algorithm on a dataset with features having very different scales (e.g., Age in years vs Income in dollars). For which algorithm is feature scaling more critical and why?
+
+\textbf{Solution:} Feature scaling is critical for **KNN** but not for Decision Trees.
+**Reason**: KNN relies on distance calculations (e.g., Euclidean distance). If one feature has a much larger range (like Income) than another (like Age), it will dominate the distance computation, making the other feature irrelevant. Scaling ensures all features contribute equally. Decision Trees, on the other hand, make splits based on single features at a time (univariate splits) and are invariant to monotonic transformations of the features, so scaling is not required.
+
+\section{Linear Models for Regression}
+\subsection*{Question 11 (Regression)}
+\textbf{Problem:} Given three data points $(x, y)$: $(1, 2), (2, 3), (3, 5)$. Use the method of least squares to find the best fit line $y = w_0 + w_1 x$. (You can use the formula $w_1 = \frac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sum (x_i - \bar{x})^2}$ and $w_0 = \bar{y} - w_1 \bar{x}$).
+
+\textbf{Solution:} 1. Calculate means: $\bar{x} = \frac{1+2+3}{3} = 2$, $\bar{y} = \frac{2+3+5}{3} = \frac{10}{3} \approx 3.33$.
+2. Calculate slope $w_1$:
+   Numerator: $(1-2)(2-3.33) + (2-2)(3-3.33) + (3-2)(5-3.33) = (-1)(-1.33) + 0 + (1)(1.67) = 1.33 + 1.67 = 3.0$.
+   Denominator: $(1-2)^2 + (2-2)^2 + (3-2)^2 = 1 + 0 + 1 = 2$.
+   $w_1 = \frac{3.0}{2} = 1.5$.
+3. Calculate intercept $w_0$:
+   $w_0 = 3.33 - 1.5(2) = 3.33 - 3.0 = 0.33$.
+   Equation: $y = 0.33 + 1.5x$.
+
+\subsection*{Question 12 (Regression)}
+\textbf{Problem:} Consider a simple regression model $y = w x$ (intercept is 0). You have one data point $(x=2, y=4)$. Initial weight $w=1$. Learning rate $\eta = 0.1$. Loss function $J(w) = \frac{1}{2}(y_{pred} - y)^2$. Perform one step of Gradient Descent to update $w$.
+
+\textbf{Solution:} 1. Prediction: $y_{pred} = w \cdot x = 1 \cdot 2 = 2$.
+2. Error: $y_{pred} - y = 2 - 4 = -2$.
+3. Gradient: $\frac{\partial J}{\partial w} = (y_{pred} - y) \cdot x = (-2) \cdot 2 = -4$.
+4. Update: $w_{new} = w_{old} - \eta \cdot \text{gradient} = 1 - 0.1(-4) = 1 + 0.4 = 1.4$.
+
+\subsection*{Question 13 (Regression)}
+\textbf{Problem:} Compare L1 (Lasso) and L2 (Ridge) regularization. Which one is preferred if you suspect many features are irrelevant and you want a sparse model?
+
+\textbf{Solution:} **L1 (Lasso)** regularization adds a penalty term proportional to the absolute value of the weights ($\lambda \sum |w_i|$). It has the property of shrinking some coefficients exactly to zero, effectively performing feature selection and producing a sparse model.
+**L2 (Ridge)** regularization adds a penalty term proportional to the square of the weights ($\lambda \sum w_i^2$). It shrinks coefficients towards zero but rarely makes them exactly zero.
+**Preference**: If you suspect many features are irrelevant, **L1 (Lasso)** is preferred because it will set the weights of those irrelevant features to zero.
+
+\subsection*{Question 14 (Regression)}
+\textbf{Problem:} Calculate the Ridge Regression cost function $J(w)$ for a model with weights $w = [3, 4]$, data error (MSE) $= 10$, and regularization parameter $\lambda = 0.5$. (Cost formula: $J = \text{MSE} + \lambda \sum w_i^2$).
+
+\textbf{Solution:} 1. MSE = 10.
+2. Regularization term: $\lambda (3^2 + 4^2) = 0.5 (9 + 16) = 0.5 (25) = 12.5$.
+3. Total Cost: $J = 10 + 12.5 = 22.5$.
+
+\subsection*{Question 15 (Regression)}
+\textbf{Problem:} You fit a polynomial regression model of degree 1 (linear), degree 5, and degree 20 to a dataset with 50 points. Which model is most likely to suffer from High Bias? Which is most likely to suffer from High Variance?
+
+\textbf{Solution:} **Degree 1 (Linear)**: Likely to suffer from **High Bias (Underfitting)** if the underlying data relationship is non-linear/complex.
+**Degree 20**: Likely to suffer from **High Variance (Overfitting)** because it is too complex for 50 data points and will try to fit the noise in the data.
+
+\subsection*{Question 16 (Regression)}
+\textbf{Problem:} Explain the difference between Batch Gradient Descent and Stochastic Gradient Descent (SGD) in terms of parameter updates and convergence speed.
+
+\textbf{Solution:} **Batch Gradient Descent**: Computes the gradient using the *entire* dataset for each update.
+- Pros: Stable convergence, vectorization benefits.
+- Cons: Very slow per update for large datasets, memory intensive.
+**Stochastic Gradient Descent (SGD)**: Computes the gradient using a *single* training example for each update.
+- Pros: Much faster updates, can escape local minima due to noise.
+- Cons: Noisy convergence (oscillates around minimum).
+
+\subsection*{Question 17 (Regression)}
+\textbf{Problem:} A regression model predicts values such that the Sum of Squared Residuals (SSR) is 20. The Total Sum of Squares (SST) of the target variable is 100. Calculate the $R^2$ score.
+
+\textbf{Solution:} $R^2 = 1 - \frac{\text{SSR}}{\text{SST}} = 1 - \frac{20}{100} = 1 - 0.2 = 0.8$.
+
+\subsection*{Question 18 (Regression)}
+\textbf{Problem:} What happens if the learning rate $\eta$ in Gradient Descent is too large? What happens if it is too small?
+
+\textbf{Solution:} **Too Large**: The algorithm might overshoot the minimum, fail to converge, or even diverge (loss increases).
+**Too Small**: The algorithm will converge very slowly, requiring many iterations to reach the minimum, and might get stuck in local minima.
+
+\subsection*{Question 19 (Regression)}
+\textbf{Problem:} You are trying to predict the price of a house based on its size. You suspect the relationship is quadratic (price increases with size but levels off). How can you use linear regression to model this?
+
+\textbf{Solution:} You can use **Basis Expansion** (Polynomial Regression). Create a new feature $x^2$ (size squared) and add it to the model. The model becomes $y = w_0 + w_1 x + w_2 x^2$. Although this is a non-linear function of $x$, it is still linear in the parameters $w$, so you can use standard linear regression techniques to solve it.
+
+\subsection*{Question 20 (Regression)}
+\textbf{Problem:} When would you use Elastic Net regularization instead of pure Lasso or Ridge?
+
+\textbf{Solution:} Elastic Net is a combination of L1 and L2 regularization. It is useful when:
+1. There are highly correlated features (Lasso tends to pick one at random, while Elastic Net can pick both like Ridge).
+2. The number of predictors ($p$) is greater than the number of observations ($n$).
+It combines the feature selection of Lasso with the stability of Ridge.
+
+\section{Linear Models for Classification}
+\subsection*{Question 21 (Classification)}
+\textbf{Problem:} In Logistic Regression, the linear combination of inputs $z = w^T x + b$ is -2. Calculate the predicted probability $\hat{y} = \sigma(z)$.
+
+\textbf{Solution:} Sigmoid function: $\sigma(z) = \frac{1}{1 + e^{-z}}$.
+For $z = -2$: $\sigma(-2) = \frac{1}{1 + e^{-(-2)}} = \frac{1}{1 + e^2} \approx \frac{1}{1 + 7.389} = \frac{1}{8.389} \approx 0.119$.
+
+\subsection*{Question 22 (Classification)}
+\textbf{Problem:} Calculate the Log Loss (Binary Cross-Entropy) for a single example where the true label $y=1$ and the predicted probability $\hat{y} = 0.8$. (Formula: $L = -[y \log(\hat{y}) + (1-y) \log(1-\hat{y})]$).
+
+\textbf{Solution:} Since $y=1$, the second term becomes 0.
+$L = -[1 \cdot \log(0.8)]$.
+Using natural log: $\ln(0.8) \approx -0.223$.
+$L = -(-0.223) = 0.223$.
+
+\subsection*{Question 23 (Classification)}
+\textbf{Problem:} Logistic Regression produces a linear decision boundary. Explain why, given that it uses a non-linear sigmoid function.
+
+\textbf{Solution:} The decision boundary is where the probability is 0.5 (for a standard threshold).
+$\sigma(z) = 0.5 \implies z = 0$.
+Since $z = w^T x + b$, the boundary is defined by the equation $w^T x + b = 0$. This is a linear equation (a line in 2D, a plane in 3D), hence the boundary is linear.
+
+\subsection*{Question 24 (Classification)}
+\textbf{Problem:} In a logistic regression model predicting heart disease, the coefficient for 'Age' is $w_{age} = 0.5$. Calculate the Odds Ratio associated with a one-unit increase in Age. How do you interpret this?
+
+\textbf{Solution:} Odds Ratio = $e^{w_{age}} = e^{0.5} \approx 1.649$.
+Interpretation: For every one-year increase in age, the odds of having heart disease increase by a factor of 1.649 (or increase by 64.9\%), assuming all other variables remain constant.
+
+\subsection*{Question 25 (Classification)}
+\textbf{Problem:} Classify Logistic Regression and Naive Bayes as Generative or Discriminative models. Explain the difference.
+
+\textbf{Solution:} **Logistic Regression** is a **Discriminative** model because it directly models the posterior probability $P(Y|X)$ (decision boundary) without modeling the underlying data distribution.
+**Naive Bayes** is a **Generative** model because it models the joint probability $P(X, Y)$ (or $P(X|Y)$ and $P(Y)$) - effectively learning how the data is generated for each class - and then uses Bayes' rule to calculate $P(Y|X)$.
+
+\subsection*{Question 26 (Classification)}
+\textbf{Problem:} You have a 3-class classification problem. Describe the One-vs-Rest (OvR) strategy for using binary logistic regression classifiers to solve this.
+
+\textbf{Solution:} In **One-vs-Rest (OvR)** (or One-vs-All), you train 3 separate binary classifiers:
+1. Class 1 vs (Class 2 + Class 3)
+2. Class 2 vs (Class 1 + Class 3)
+3. Class 3 vs (Class 1 + Class 2)
+To classify a new instance, you run all 3 classifiers and choose the class whose classifier outputs the highest probability.
+
+\subsection*{Question 27 (Classification)}
+\textbf{Problem:} The gradient of the log-loss with respect to weight $w_j$ is given by $\frac{\partial J}{\partial w_j} = (\hat{y} - y)x_j$. Given $x_j=2$, true label $y=1$, and predicted prob $\hat{y}=0.4$, calculate the gradient.
+
+\textbf{Solution:} Gradient = $(0.4 - 1) \cdot 2 = (-0.6) \cdot 2 = -1.2$.
+
+\subsection*{Question 28 (Classification)}
+\textbf{Problem:} You plot your data and see that Class 0 is inside a circle of radius 5, and Class 1 is outside that circle. Can a standard Logistic Regression model classify this correctly? If not, how can you fix it?
+
+\textbf{Solution:} No, a standard Logistic Regression model cannot classify this correctly because it forms a linear decision boundary (a straight line), and the data is not linearly separable (it requires a circular boundary).
+**Fix**: Use Feature Engineering. Add non-linear features like $x_1^2$ and $x_2^2$ (squared terms). The model can then learn a boundary like $x_1^2 + x_2^2 = r^2$, which represents a circle.
+
+\subsection*{Question 29 (Classification)}
+\textbf{Problem:} What is the core assumption of Logistic Regression regarding the relationship between features and the log-odds of the target?
+
+\textbf{Solution:} The core assumption is that there is a **linear relationship** between the input features (independent variables) and the **log-odds** (logit) of the target variable. i.e., $\ln(\frac{p}{1-p}) = w^T x + b$.
+
+\subsection*{Question 30 (Classification)}
+\textbf{Problem:} How does increasing the regularization strength (e.g., increasing $\lambda$ or decreasing C in scikit-learn) affect the decision boundary of a Logistic Regression model?
+
+\textbf{Solution:} Increasing regularization strength (penalty) forces the weights to be smaller. This reduces the model's complexity and makes the decision boundary 'smoother' or simpler. It reduces Variance but increases Bias. In the context of overfitting, it helps prevent the boundary from contorting to fit outliers.
+
+\section{Decision Trees}
+\subsection*{Question 31 (Decision Trees)}
+\textbf{Problem:} Given the following dataset for predicting whether a startup will be profitable, calculate the Information Gain for splitting on the 'Funding' attribute and the 'Team Size' attribute. Which attribute would the ID3 algorithm choose as the root of the decision tree? \\ ID Funding Team Size Profitable \\ 1 High Small Yes \\ 2 High Large Yes \\ 3 Low Small No \\ 4 Medium Small Yes \\ 5 Medium Large No \\ 6 Low Large No \\ 7 High Large Yes \\ 8 Medium Small No
+
+\textbf{Solution:} Step 1: Calculate the entropy of the entire dataset (Entropy(S)). \\ Total instances: 8. Profitable (Yes): 4. Not Profitable (No): 4. \\ P(Yes) = 0.5, P(No) = 0.5. Entropy(S) = -0.5 log2(0.5) - 0.5 log2(0.5) = 1 bit. \\ Step 2: Calculate the Information Gain for the 'Funding' attribute. \\ High: 3 instances (3 Yes). Entropy = 0. \\ Medium: 3 instances (1 Yes, 2 No). Entropy = -(1/3 log2(1/3) + 2/3 log2(2/3)) $\approx$ 0.918. \\ Low: 2 instances (2 No). Entropy = 0. \\ Weighted Avg Entropy = (3/8)*0 + (3/8)*0.918 + (2/8)*0 = 0.344. \\ Gain(S, Funding) = 1 - 0.344 = 0.656. \\ Step 3: Calculate the Information Gain for 'Team Size'. \\ Small: 4 instances (2 Yes, 2 No). Entropy = 1. \\ Large: 4 instances (2 Yes, 2 No). Entropy = 1. \\ Weighted Avg Entropy = (4/8)*1 + (4/8)*1 = 1. \\ Gain(S, Team Size) = 1 - 1 = 0. \\ Conclusion: ID3 chooses **Funding** (Gain 0.656 > 0).
+
+\subsection*{Question 32 (Decision Trees)}
+\textbf{Problem:} Your team is building a decision tree to predict customer churn. One of the features is 'AverageMonthlySpend', which is a continuous-valued attribute. How would an algorithm like C4.5 handle this attribute? Describe the process of finding the best split threshold.
+
+\textbf{Solution:} C4.5 handles continuous attributes by creating binary splits ($A \le t$ vs $A > t$). The process is: \\ 1. **Sort** the unique values of the attribute. \\ 2. **Identify Candidate Splits**: Typically the midpoints between adjacent sorted values where the class label changes. \\ 3. **Evaluate**: Calculate Information Gain (or Gain Ratio) for each candidate split. \\ 4. **Select**: Choose the threshold $t$ that yields the highest gain. This attribute can be reused deeper in the tree with different thresholds.
+
+\subsection*{Question 33 (Decision Trees)}
+\textbf{Problem:} You are given a dataset where 15\% of the values for the attribute 'CustomerAge' are missing. When building a decision tree, how would you handle these missing values during the training phase using a probabilistic splitting approach (like the one used in C4.5)?
+
+\textbf{Solution:} C4.5 handles missing values by: \\ 1. **Fractional Gain Calculation**: When evaluating the gain of an attribute, examples with missing values are not ignored. Instead, they are distributed fractionally to each branch based on the proportion of non-missing examples that went to that branch. \\ 2. **Entropy Calculation**: The gain is calculated using these fractional weights.
+
+\subsection*{Question 34 (Decision Trees)}
+\textbf{Problem:} Compare pre-pruning and post-pruning in decision trees. Describe a scenario where post-pruning would be significantly more effective than pre-pruning.
+
+\textbf{Solution:} **Pre-pruning (Early Stopping)** stops the tree growth during training based on criteria like max depth or min gain. It is faster but can suffer from the 'horizon effect' (stopping too early before a beneficial interaction is found). \\ **Post-pruning** grows the full tree and then removes branches that don't help generalization (checked on a validation set). \\ **Scenario**: An 'XOR' problem where two features individually have low information gain but together perfectly classify the data. Pre-pruning might stop at the root because neither feature looks good individually. Post-pruning would build the full tree, see the interaction, and retain the structure.
+
+\subsection*{Question 35 (Decision Trees)}
+\textbf{Problem:} Given the following data with a continuous feature 'TestScore', demonstrate how the C4.5 algorithm would find the best binary split for this feature. \\ TestScore Pass \\ 55 No \\ 60 No \\ 75 Yes \\ 80 Yes \\ 85 No \\ 95 Yes
+
+\textbf{Solution:} 1. **Sort**: 55(N), 60(N), 75(Y), 80(Y), 85(N), 95(Y). \\ 2. **Split Points** (where class changes): \\ T1 between 60 & 75 = 67.5. \\ T2 between 80 & 85 = 82.5. \\ T3 between 85 & 95 = 90.0. \\ 3. **Evaluate**: \\ Parent Entropy (3Y, 3N) = 1. \\ T1 (<=67.5): {55, 60} (2N) -> E=0. {75..95} (3Y, 1N) -> E=0.811. Gain = 1 - [(2/6)*0 + (4/6)*0.811] = 0.459. \\ T2 (<=82.5): {55..80} (2Y, 2N) -> E=1. {85, 95} (1Y, 1N) -> E=1. Gain = 0. \\ T3 (<=90.0): {55..85} (2Y, 3N) -> E=0.971. {95} (1Y) -> E=0. Gain = 1 - [(5/6)*0.971] = 0.191. \\ **Best Split**: TestScore <= 67.5.
+
+\subsection*{Question 36 (Decision Trees)}
+\textbf{Problem:} Calculate the Gini Index for a node containing the following class distribution: Class A: 10 examples, Class B: 20 examples. (Formula: $Gini = 1 - \sum p_i^2$).
+
+\textbf{Solution:} Total examples = 30. \\ $p_A = 10/30 = 1/3$. $p_B = 20/30 = 2/3$. \\ $Gini = 1 - ((1/3)^2 + (2/3)^2) = 1 - (1/9 + 4/9) = 1 - 5/9 = 4/9 \approx 0.444$.
+
+\subsection*{Question 37 (Decision Trees)}
+\textbf{Problem:} Why is the Gini Index often preferred over Entropy in computational implementations of Decision Trees (like CART)?
+
+\textbf{Solution:} Gini Index does not involve calculating logarithms, which are computationally more expensive than the simple squaring and subtraction operations used in Gini. While both measures produce very similar trees, Gini is slightly faster to compute.
+
+\subsection*{Question 38 (Decision Trees)}
+\textbf{Problem:} Explain the concept of 'Gain Ratio' and why it is used instead of Information Gain in C4.5. Give an example of an attribute where Information Gain would fail but Gain Ratio would work.
+
+\textbf{Solution:} Information Gain has a bias towards attributes with many unique values (high cardinality). **Gain Ratio** normalizes Information Gain by the 'Split Information' (entropy of the split itself). \\ **Example**: A 'CustomerID' attribute. It has a unique value for every example, so splitting on it results in pure leaf nodes (Entropy=0) and maximal Information Gain. However, this is useless for generalization. Gain Ratio penalizes this by dividing by the high Split Information of CustomerID, resulting in a low score.
+
+\subsection*{Question 39 (Decision Trees)}
+\textbf{Problem:} How does a Regression Tree (like in CART) determine the quality of a split? What metric replaces Entropy/Gini?
+
+\textbf{Solution:} For Regression Trees, the target is continuous. The quality of a split is typically determined by the reduction in **Mean Squared Error (MSE)** or **Variance**. The algorithm chooses the split that minimizes the sum of the squared deviations from the mean in the child nodes.
+
+\subsection*{Question 40 (Decision Trees)}
+\textbf{Problem:} Discuss the relationship between the depth of a decision tree and the Bias-Variance tradeoff.
+
+\textbf{Solution:} **Shallow Tree**: High Bias, Low Variance. It cannot capture complex relationships (underfitting). \\ **Deep Tree**: Low Bias, High Variance. It can capture very complex patterns and noise in the training data (overfitting). \\ The optimal depth is a balance between these two.
+
+\section{Instance-based Learning}
+\subsection*{Question 41 (Instance-based)}
+\textbf{Problem:} Given the following 2D dataset, classify the new point P_new(3,5) using the k-Nearest Neighbor algorithm with k=3. Calculate the result using Euclidean distance. \\ P1(1,2) Class A \\ P2(2,4) Class A \\ P3(4,1) Class B \\ P4(5,4) Class B \\ P5(4,6) Class A \\ P6(6,2) Class B
+
+\textbf{Solution:} Calculate distances from (3,5): \\ P1: $\sqrt{(3-1)^2+(5-2)^2} = \sqrt{4+9} = \sqrt{13} \approx 3.61$ \\ P2: $\sqrt{(3-2)^2+(5-4)^2} = \sqrt{1+1} = \sqrt{2} \approx 1.41$ \\ P3: $\sqrt{(3-4)^2+(5-1)^2} = \sqrt{1+16} = \sqrt{17} \approx 4.12$ \\ P4: $\sqrt{(3-5)^2+(5-4)^2} = \sqrt{4+1} = \sqrt{5} \approx 2.24$ \\ P5: $\sqrt{(3-4)^2+(5-6)^2} = \sqrt{1+1} = \sqrt{2} \approx 1.41$ \\ P6: $\sqrt{(3-6)^2+(5-2)^2} = \sqrt{9+9} = \sqrt{18} \approx 4.24$ \\ Sorted Distances: P2(1.41, A), P5(1.41, A), P4(2.24, B). \\ Top 3 Neighbors: A, A, B. \\ Majority Vote: **Class A**.
+
+\subsection*{Question 42 (Instance-based)}
+\textbf{Problem:} You are developing a system to recommend news articles to users. The articles are represented as high-dimensional TF-IDF vectors. Why would Euclidean distance be a poor choice? What metric is better?
+
+\textbf{Solution:} Euclidean distance is poor for high-dimensional sparse text data because: 1) **Curse of Dimensionality** makes distances similar. 2) It is sensitive to document length (magnitude). \\ **Cosine Similarity** is better because it measures the angle between vectors (orientation), effectively capturing the similarity in topic/content regardless of document length.
+
+\subsection*{Question 43 (Instance-based)}
+\textbf{Problem:} Explain the core idea behind Locally Weighted Regression (LWR). How does it differ from standard linear regression?
+
+\textbf{Solution:} LWR is a lazy learning method. Instead of training a single global model, it trains a local linear model *at query time* for the specific query point. It assigns weights to training points based on their distance to the query point (closer points get higher weights) and minimizes weighted squared error. This allows it to model complex non-linear functions locally.
+
+\subsection*{Question 44 (Instance-based)}
+\textbf{Problem:} You are using k-NN regression with k=3 to predict the price of a house based on size. Data: (1500, 300), (1800, 350), (1900, 400), (2200, 500), (2500, 520), (3000, 600). Predict for Size=2000.
+
+\textbf{Solution:} Query: 2000. \\ Distances: |2000-1500|=500, |2000-1800|=200, |2000-1900|=100, |2000-2200|=200, |2000-2500|=500, |2000-3000|=1000. \\ Nearest 3: 1900 (Dist 100), 1800 (Dist 200), 2200 (Dist 200). \\ Prices: 400, 350, 500. \\ Prediction = Average(400, 350, 500) = 1250/3 $\approx$ 416.67 (Thousands).
+
+\subsection*{Question 45 (Instance-based)}
+\textbf{Problem:} Describe a scenario where choosing a very small value of 'k' (e.g., k=1) in k-NN would be problematic. What does this relate to in bias-variance?
+
+\textbf{Solution:} Scenario: A dataset with noise. If a new point is close to a noise outlier (e.g., a 'healthy' patient mislabeled as 'sick'), 1-NN will blindly predict the outlier's class. \\ Bias-Variance: k=1 corresponds to **Low Bias** (fits training data perfectly) but **High Variance** (highly sensitive to noise and specific training points). It leads to overfitting.
+
+\subsection*{Question 46 (Instance-based)}
+\textbf{Problem:} In a Weighted KNN classifier, how are the weights usually assigned? Calculate the predicted class for a point if its 3 nearest neighbors have distances $d_1=1, d_2=2, d_3=4$ and classes A, B, B respectively. Use weight $w = 1/d^2$.
+
+\textbf{Solution:} Weights are often inverse distance ($1/d$) or inverse squared distance ($1/d^2$). \\ Weights: $w_1 = 1/1^2 = 1$ (Class A). $w_2 = 1/2^2 = 0.25$ (Class B). $w_3 = 1/4^2 = 0.0625$ (Class B). \\ Total Weight A: 1. \\ Total Weight B: 0.25 + 0.0625 = 0.3125. \\ Prediction: **Class A** (1 > 0.3125).
+
+\subsection*{Question 47 (Instance-based)}
+\textbf{Problem:} What is the difference between Manhattan Distance and Euclidean Distance? In a city-block grid layout, which one is more appropriate?
+
+\textbf{Solution:} Euclidean is the straight-line (L2) distance. Manhattan is the sum of absolute differences (L1) along axes. In a grid layout (like city blocks) where you can only move horizontally or vertically, **Manhattan Distance** represents the actual travel distance better.
+
+\subsection*{Question 48 (Instance-based)}
+\textbf{Problem:} KNN is a 'Lazy Learner'. What does this mean for its Training Time and Prediction Time complexity compared to Eager Learners like Logistic Regression?
+
+\textbf{Solution:} **Training Time**: KNN is $O(1)$ (or just storing data), effectively zero training. Eager learners take time to optimize parameters. \\ **Prediction Time**: KNN is expensive $O(N \cdot D)$ as it scans all data. Eager learners are fast $O(D)$ using the learned formula. \\ KNN shifts the computational burden to prediction time.
+
+\subsection*{Question 49 (Instance-based)}
+\textbf{Problem:} How does the presence of an irrelevant feature (random noise) affect the performance of KNN? Use the concept of distance concentration.
+
+\textbf{Solution:} Irrelevant features add 'noise' to the distance calculation. Two points that are similar in relevant features might appear far apart because of differences in the random irrelevant feature. This dilutes the meaningful distance information, degrading performance (Curse of Dimensionality).
+
+\subsection*{Question 50 (Instance-based)}
+\textbf{Problem:} For categorical variables (e.g., Color = {Red, Blue, Green}), Euclidean distance cannot be directly applied. Name and describe a distance metric suitable for such data.
+
+\textbf{Solution:} **Hamming Distance** (or simple matching dissimilarity). It counts the number of attributes where the values differ. $d(x, y) = \sum I(x_i \ne y_i)$. If attributes match, distance is 0, else 1.
+
+\section{Support Vector Machines}
+\subsection*{Question 51 (SVM)}
+\textbf{Problem:} Given the following linearly separable 2D data, find the equation of the maximum margin hyperplane. Class +1: (2, 3), (3, 3). Class -1: (1, 1), (2, 1). Identify the support vectors.
+
+\textbf{Solution:} 1. Inspection shows a horizontal line separates the classes. Class +1 $y \ge 3$, Class -1 $y \le 1$. \\ 2. Midpoint line is $y = 2$ (or $x_2 = 2$). \\ 3. Hyperplane equation $w \cdot x + b = 0$. $w=(0, 1), b=-2$. $x_2 - 2 = 0$. \\ 4. Support vectors are the points closest to the hyperplane. For +1: (2,3), (3,3). For -1: (1,1), (2,1). All 4 are support vectors. Margin = 2 / $|w|$ = 2.
+
+\subsection*{Question 52 (SVM)}
+\textbf{Problem:} Explain how an SVM with the 'kernel trick' can handle non-linearly separable data (like separating a circle of points from a ring of points). What specific kernel might be a good starting point?
+
+\textbf{Solution:} The kernel trick implicitly maps data to a higher-dimensional space where it becomes linearly separable. It does this by computing dot products in that space without transforming the vectors. \\ For concentric circles, the **Radial Basis Function (RBF)** or **Gaussian Kernel** is a good start as it measures similarity based on distance, effectively lifting the center cluster.
+
+\subsection*{Question 53 (SVM)}
+\textbf{Problem:} Explain the role of the regularization parameter 'C' and slack variables in a soft-margin SVM. How does tuning 'C' affect bias and variance?
+
+\textbf{Solution:} Slack variables allow some misclassification to handle non-separable data. $C$ controls the penalty for these misclassifications. \\ **Small C**: Low penalty for errors. Wider margin. Simpler model. **High Bias, Low Variance**. \\ **Large C**: High penalty. Strives for correct classification (hard margin behavior). Complex boundary. **Low Bias, High Variance**.
+
+\subsection*{Question 54 (SVM)}
+\textbf{Problem:} Show how mapping the 1D dataset Class +1: \{-4, 4\}, Class -1: \{-1, 1\} into a 2D feature space using $\phi(x) = (x, x^2)$ makes it linearly separable.
+
+\textbf{Solution:} Transform: \\ +1: (-4, 16), (4, 16). \\ -1: (-1, 1), (1, 1). \\ In 2D space $(x_1, x_2)$, Class +1 has $x_2=16$, Class -1 has $x_2=1$. A horizontal line like $x_2 = 8$ linearly separates them.
+
+\subsection*{Question 55 (SVM)}
+\textbf{Problem:} Your company wants to use SVMs for real-time fraud detection on millions of transactions. What are the scalability challenges?
+
+\textbf{Solution:} 1. **Training Time**: $O(N^2)$ or $O(N^3)$. Slow for millions of samples. \\ 2. **Prediction Time**: Proportional to number of support vectors. If many SVs, prediction is slow. \\ **Solutions**: Use Linear SVM (fast training), Approximate Kernels, or Neural Networks instead.
+
+\subsection*{Question 56 (SVM)}
+\textbf{Problem:} Consider a linear SVM with weight vector $w = (3, 4)$. Calculate the geometric margin of the separating hyperplane.
+
+\textbf{Solution:} The margin is given by $\frac{2}{||w||}$ (for total width) or sometimes $\frac{1}{||w||}$ (distance to boundary). Usually margin refers to total separation width. \\ $||w|| = \sqrt{3^2 + 4^2} = \sqrt{25} = 5$. \\ Margin = $2/5 = 0.4$.
+
+\subsection*{Question 57 (SVM)}
+\textbf{Problem:} What is the 'Hinge Loss' function used in SVM? Write its mathematical expression for a data point $(x_i, y_i)$ and explanation.
+
+\textbf{Solution:} Hinge Loss: $L(y, f(x)) = \max(0, 1 - y_i(w \cdot x_i + b))$. \\ Explanation: If the point is correctly classified and outside the margin ($y \cdot f(x) \ge 1$), loss is 0. If it is on the wrong side of the margin or misclassified, the loss increases linearly.
+
+\subsection*{Question 58 (SVM)}
+\textbf{Problem:} In the RBF Kernel $K(x, y) = \exp(-\gamma ||x-y||^2)$, what is the effect of a very large $\gamma$ (gamma)?
+
+\textbf{Solution:} A large $\gamma$ means the Gaussian is very narrow (high variance in feature space). The model considers only very close points as similar. This leads to a complex, bumpy decision boundary that fits the training data very closely, resulting in **Overfitting**.
+
+\subsection*{Question 59 (SVM)}
+\textbf{Problem:} Why is the Dual formulation of the SVM optimization problem often preferred over the Primal formulation?
+
+\textbf{Solution:} The Dual formulation allows the use of the **Kernel Trick**. The optimization depends only on dot products of data pairs $(x_i \cdot x_j)$, which can be replaced by a kernel function $K(x_i, x_j)$. This allows efficient learning in high-dimensional spaces without explicitly computing the transformation.
+
+\subsection*{Question 60 (SVM)}
+\textbf{Problem:} True or False: The decision boundary of a Support Vector Machine depends on all the data points in the training set.
+
+\textbf{Solution:} **False**. The decision boundary is determined *only* by the **Support Vectors** (the points closest to the boundary or misclassified). Removing non-support vectors (points far away on the correct side) does not change the decision boundary.
+
+\section{Bayesian Learning}
+\subsection*{Question 61 (Bayesian)}
+\textbf{Problem:} You flip a thumbtack: U, D, U, U, U. 1) MLE for P(Up)? 2) MAP estimate with Beta(3, 2) prior?
+
+\textbf{Solution:} 1. **MLE**: Up=4, Total=5. $\theta_{MLE} = 4/5 = 0.8$. \\ 2. **MAP**: Prior Beta($\alpha=3, \beta=2$). Posterior Beta($\alpha' = 4+3=7, \beta' = 1+2=3$). \\ $\theta_{MAP} = \frac{\alpha' - 1}{\alpha' + \beta' - 2} = \frac{7-1}{7+3-2} = \frac{6}{8} = 0.75$.
+
+\subsection*{Question 62 (Bayesian)}
+\textbf{Problem:} Use Naive Bayes to predict Play Tennis for X=(Sunny, Cool, High, Strong). Use Laplace Smoothing. Data: 9 Yes, 5 No. P(Sunny|Y)=2/9, P(Sunny|N)=3/5...
+
+\textbf{Solution:} 1. **Priors**: P(Y)=9/14, P(N)=5/14. \\ 2. **Likelihoods** (Laplace): \\ P(Sunny|Y) = (2+1)/(9+3) = 3/12. P(Cool|Y)=4/12. P(High|Y)=4/11. P(Strong|Y)=4/11. \\ P(Sunny|N) = (3+1)/(5+3)=4/8. P(Cool|N)=2/8. P(High|N)=5/7. P(Strong|N)=4/7. \\ 3. **Posterior**: \\ P(Y|X) $\propto 9/14 \cdot 3/12 \cdot 4/12 \cdot 4/11 \cdot 4/11 \approx 0.0053$. \\ P(N|X) $\propto 5/14 \cdot 4/8 \cdot 2/8 \cdot 5/7 \cdot 4/7 \approx 0.0182$. \\ Prediction: **No**.
+
+\subsection*{Question 63 (Bayesian)}
+\textbf{Problem:} The 'naive' assumption is conditional independence. Give a real-world example where this is violated but NB still works.
+
+\textbf{Solution:} **Spam Filtering**. 'Buy' and 'Now' are correlated. Violation: P(Buy|Spam) independent of P(Now|Spam) is false. \\ NB Works because: Even if probabilities are skewed, the correct class often still has the maximum posterior. The decision boundary is often good enough.
+
+\subsection*{Question 64 (Bayesian)}
+\textbf{Problem:} Differentiate between Generative and Discriminative classifiers. Classify Naive Bayes and Logistic Regression.
+
+\textbf{Solution:} **Generative**: Models P(X,Y). Learns how data is generated. (Naive Bayes). \\ **Discriminative**: Models P(Y|X) directly. Learns boundary. (Logistic Regression).
+
+\subsection*{Question 65 (Bayesian)}
+\textbf{Problem:} Calculate P(W=T|R=T, S=T) from the Bayesian Network (Rain) -> (Wet Grass) <- (Sprinkler). CPT for W: P(W|R,S). Row T, T is 0.99.
+
+\textbf{Solution:} P(W=T | R=T, S=T) is directly looked up from the Conditional Probability Table (CPT) for the node W given its parents R and S. The problem states the value in the CPT for R=T, S=T is 0.99. So, **0.99**.
+
+\subsection*{Question 66 (Bayesian)}
+\textbf{Problem:} In a text classification problem (Spam vs Ham) using the **Multivariate Bernoulli** model, the word 'free' appears in 50 out of 100 spam emails and 1 out of 1000 ham emails. Estimate P(free|Spam) and P(free|Ham) using Laplace Smoothing.
+
+\textbf{Solution:} In the Bernoulli model, we estimate the probability of the word's presence in a document. The smoothing adds 1 to the numerator and 2 (for the two possible states: present/absent) to the denominator. \\
+$P(free|Spam) = \frac{N(free, Spam) + 1}{N(Spam) + 2} = \frac{50 + 1}{100 + 2} = \frac{51}{102} = 0.5$. \\
+$P(free|Ham) = \frac{N(free, Ham) + 1}{N(Ham) + 2} = \frac{1 + 1}{1000 + 2} = \frac{2}{1002} \approx 0.002$.
+
+\subsection*{Question 67 (Bayesian)}
+\textbf{Problem:} What is the 'Zero Frequency' problem in Naive Bayes and how does Laplace Smoothing solve it?
+
+\textbf{Solution:} If a categorical value (e.g., 'WordX') never appears in the training data for a specific class, its Likelihood probability becomes 0. Since NB multiplies probabilities, the entire posterior becomes 0, ignoring all other evidence. \\ **Laplace Smoothing** adds a small count (usually 1) to all feature counts, ensuring no probability is ever exactly zero.
+
+\subsection*{Question 68 (Bayesian)}
+\textbf{Problem:} Explain the concept of a 'Conjugate Prior' in Bayesian statistics. Why is the Beta distribution useful for Bernoulli trials?
+
+\textbf{Solution:} A prior is **conjugate** to a likelihood function if the posterior distribution belongs to the same family as the prior. \\ The **Beta distribution** is the conjugate prior for the Bernoulli/Binomial likelihood. If prior is Beta($\alpha, \beta$) and we observe data (Heads/Tails), the posterior is simply Beta($\alpha + H, \beta + T$). This makes Bayesian updating mathematically simple (just adding counts).
+
+\subsection*{Question 69 (Bayesian)}
+\textbf{Problem:} Consider a Gaussian Naive Bayes classifier. What parameters does it learn for each class and each continuous feature?
+
+\textbf{Solution:} For each class $c$ and each feature $i$, it learns two parameters: \\ 1. Mean $\mu_{c,i}$ \\ 2. Variance $\sigma^2_{c,i}$ \\ It assumes the feature follows a Normal distribution $N(\mu, \sigma^2)$ within that class.
+
+\subsection*{Question 70 (Bayesian)}
+\textbf{Problem:} In a Bayesian Belief Network, if Node A is a parent of Node B, and we define the structure A -> B. Does this necessarily imply A causes B?
+
+\textbf{Solution:} Not necessarily. While arrows often represent causal relationships in causal networks, in a general Bayesian Network, the arrow represents a probabilistic dependency (conditional probability). It encodes the factorization of the joint distribution, which could be constructed in a non-causal order (though causal orders usually yield simpler graphs).
+
+\section{Ensemble Learning}
+\subsection*{Question 71 (Ensemble)}
+\textbf{Problem:} Perform first iteration of AdaBoost on data: x={1,2,3,4,5,6}, y={+1,+1,-1,-1,+1,+1}. Stump x<2.5 (Errors on 5,6).
+
+\textbf{Solution:} 1. Initial weights $w = 1/6$. \\ 2. Error $\epsilon = w_5 + w_6 = 1/3$. \\ 3. $\alpha = 0.5 \ln((1-1/3)/(1/3)) = 0.5 \ln(2) \approx 0.347$. \\ 4. Update: Correct ($1..4$): $1/6 e^{-0.347} \approx 0.118$. Incorrect ($5,6$): $1/6 e^{0.347} \approx 0.236$. \\ 5. Normalize: $Z = 4(0.118)+2(0.236) = 0.944$. New weights: Correct $\approx 0.125$, Incorrect $\approx 0.25$.
+
+\subsection*{Question 72 (Ensemble)}
+\textbf{Problem:} Compare Bagging and Boosting. How do they handle Bias and Variance?
+
+\textbf{Solution:} **Bagging** (Parallel): Trains models on bootstrap samples. Reduces **Variance** (good for overfitting models like deep trees). \\ **Boosting** (Sequential): Trains models to correct previous errors. Reduces **Bias** (good for underfitting models like stumps) and also Variance.
+
+\subsection*{Question 73 (Ensemble)}
+\textbf{Problem:} Random Forest uses Bootstrap Sampling and Random Feature Subspace. Explain purpose.
+
+\textbf{Solution:} **Bootstrap**: Creates diverse training sets, decorrelating trees. \\ **Random Feature Subspace**: At each split, only a subset of features is considered. This prevents one strong feature from dominating all trees, further decorrelating them. Decorrelation is key to variance reduction.
+
+\subsection*{Question 74 (Ensemble)}
+\textbf{Problem:} 3 classifiers. P(A): 0.7, 0.8, 0.4. Hard Voting vs Soft Voting result?
+
+\textbf{Solution:} **Hard Voting**: A, A, B -> Majority A. \\ **Soft Voting**: Avg(0.7, 0.8, 0.4) = 1.9/3 = 0.633. Class A (0.633) > Class B (0.367). Result A.
+
+\subsection*{Question 75 (Ensemble)}
+\textbf{Problem:} Intuition of Gradient Boosting vs AdaBoost?
+
+\textbf{Solution:} **AdaBoost** re-weights data points to focus on hard examples. \\ **Gradient Boosting** fits the *residual errors* (gradient of loss) of the previous ensemble directly. It's an additive model optimizing the loss function.
+
+\subsection*{Question 76 (Ensemble)}
+\textbf{Problem:} What is Out-of-Bag (OOB) Error in Random Forest and how is it used?
+
+\textbf{Solution:} Since each tree is trained on a bootstrap sample (approx 63\% of data), the remaining 37\% (OOB samples) are unseen by that tree. OOB Error is calculated by predicting each sample using only the trees that did *not* see it during training. It provides an unbiased estimate of generalization error without needing a separate validation set.
+
+\subsection*{Question 77 (Ensemble)}
+\textbf{Problem:} In Gradient Boosting, what is the role of the 'Learning Rate' (shrinkage)?
+
+\textbf{Solution:} The learning rate $\nu$ scales the contribution of each new tree added to the ensemble ($F_m(x) = F_{m-1}(x) + \nu \cdot h_m(x)$). A smaller learning rate (e.g., 0.01 or 0.1) reduces overfitting by making the model learn slower, requiring more trees but generally leading to better generalization.
+
+\subsection*{Question 78 (Ensemble)}
+\textbf{Problem:} Explain the concept of 'Stacking' (Stacked Generalization). How does it differ from Voting?
+
+\textbf{Solution:} **Voting** combines predictions using a simple rule (majority/average). **Stacking** trains a meta-model (level-2) to learn how to best combine the predictions of the base models (level-1). The base models' predictions become the input features for the meta-model.
+
+\subsection*{Question 79 (Ensemble)}
+\textbf{Problem:} Which algorithm is easier to parallelize: Random Forest or Gradient Boosting? Why?
+
+\textbf{Solution:} **Random Forest** is easier to parallelize because each tree is trained independently on a bootstrap sample. They can be built simultaneously. **Gradient Boosting** is sequential; tree $t$ depends on the residuals of tree $t-1$, so they must be built one after another.
+
+\subsection*{Question 80 (Ensemble)}
+\textbf{Problem:} If your Random Forest model is overfitting, what hyperparameters should you tune? (Name two).
+
+\textbf{Solution:} 1. **Min Samples per Leaf**: Increase it to prevent trees from isolating noise. \\ 2. **Max Depth**: Decrease it to limit tree complexity. \\ 3. **Max Features**: Decrease it to force more diversity.
+
+\section{Unsupervised Learning}
+\subsection*{Question 81 (Unsupervised)}
+\textbf{Problem:} Given the 2D points A(2,10), B(2,5), C(8,4), D(5,8), E(7,5), F(6,4), G(1,2), H(4,9), perform two full iterations of the K-means clustering algorithm with K=2. The initial centroids are $C_1 = (2,10)$ (point A) and $C_2 = (8,4)$ (point C).
+
+\textbf{Solution:}
+\textbf{Iteration 1 Assignment:} Calculate squared Euclidean distances.
+\begin{itemize}
+    \item A(2,10): $d^2(C_1)=0$, $d^2(C_2)=72$ $\rightarrow$ C1
+    \item B(2,5): $d^2(C_1)=25$, $d^2(C_2)=37$ $\rightarrow$ C1
+    \item C(8,4): $d^2(C_1)=72$, $d^2(C_2)=0$ $\rightarrow$ C2
+    \item D(5,8): $d^2(C_1)=13$, $d^2(C_2)=25$ $\rightarrow$ C1
+    \item E(7,5): $d^2(C_1)=50$, $d^2(C_2)=2$ $\rightarrow$ C2
+    \item F(6,4): $d^2(C_1)=52$, $d^2(C_2)=4$ $\rightarrow$ C2
+    \item G(1,2): $d^2(C_1)=65$, $d^2(C_2)=53$ $\rightarrow$ C2
+    \item H(4,9): $d^2(C_1)=5$, $d^2(C_2)=41$ $\rightarrow$ C1
+\end{itemize}
+Clusters: $C_1 = \{A, B, D, H\}$, $C_2 = \{C, E, F, G\}$. \\
+\textbf{Iteration 1 Update:}
+New $C_1 = (\frac{2+2+5+4}{4}, \frac{10+5+8+9}{4}) = (3.25, 8.0)$. \\
+New $C_2 = (\frac{8+7+6+1}{4}, \frac{4+5+4+2}{4}) = (5.5, 3.75)$. \\
+\textbf{Iteration 2 Assignment:}
+Re-calculate distances to new centroids. Assignments do not change.
+Algorithm converges with centroids $(3.25, 8.0)$ and $(5.5, 3.75)$.
+
+\subsection*{Question 82 (Unsupervised)}
+\textbf{Problem:} Describe K-means++ initialization.
+
+\textbf{Solution:} 1. Pick first centroid randomly. 2. For each point, calc distance $D(x)$ to nearest existing centroid. 3. Pick next centroid with probability proportional to $D(x)^2$. This spreads centroids out, improving convergence.
+
+\subsection*{Question 83 (Unsupervised)}
+\textbf{Problem:} Hard (K-Means) vs Soft (GMM) clustering difference?
+
+\textbf{Solution:} **Hard**: Point belongs to exactly one cluster. **Soft**: Point has probability of belonging to each cluster. Soft is better for overlapping clusters.
+
+\subsection*{Question 84 (Unsupervised)}
+\textbf{Problem:} You are using EM for a GMM with K=2 on 1D dataset $\{1, 2, 8, 9, 10\}$. Initial parameters: $C_1: \mu_1=1.5, \sigma_1=1, \pi_1=0.5$. $C_2: \mu_2=8.5, \sigma_2=1, \pi_2=0.5$. Perform the E-step to find responsibilities for each point.
+
+\textbf{Solution:} Responsibility $\gamma(z_{nk}) \propto \pi_k \mathcal{N}(x_n|\mu_k, \sigma_k)$. Since $\sigma_1=\sigma_2=1$ and $\pi_1=\pi_2$, we just compare the exponential terms $\exp(-(x-\mu)^2/2)$.
+\begin{itemize}
+    \item x=1: $P(C_1) \propto \exp(-(1-1.5)^2/2) \approx 0.88$. $P(C_2) \propto \exp(-(1-8.5)^2/2) \approx 0$. $\gamma(z_{1,1}) \approx 1$.
+    \item x=2: $P(C_1) \propto \exp(-(2-1.5)^2/2) \approx 0.88$. $P(C_2) \approx 0$. $\gamma(z_{2,1}) \approx 1$.
+    \item x=8: $P(C_1) \propto \exp(-(8-1.5)^2/2) \approx 0$. $P(C_2) \propto \exp(-(8-8.5)^2/2) \approx 0.88$. $\gamma(z_{3,2}) \approx 1$.
+    \item x=9, 10: Similarly, closer to 8.5, so $\gamma(z_{n,2}) \approx 1$.
+\end{itemize}
+Result: Points \{1, 2\} assigned to Cluster 1 (prob $\approx$ 1). Points \{8, 9, 10\} assigned to Cluster 2 (prob $\approx$ 1).
+
+\subsection*{Question 85 (Unsupervised)}
+\textbf{Problem:} Using DBSCAN for fraud detection.
+
+\textbf{Solution:} Fraud is an anomaly. Use DBSCAN to cluster 'normal' dense data. Points classified as **Noise** (not in any cluster) are potential fraud.
+
+\subsection*{Question 86 (Unsupervised)}
+\textbf{Problem:} What is the Silhouette Coefficient? What range does it fall in, and what does a value of +1 indicate?
+
+\textbf{Solution:} Silhouette Coefficient measures how similar an object is to its own cluster (cohesion) compared to other clusters (separation). Range: $[-1, 1]$. \\ **+1** indicates the point is far away from neighboring clusters and close to its own cluster (good clustering).
+
+\subsection*{Question 87 (Unsupervised)}
+\textbf{Problem:} Explain the difference between Agglomerative and Divisive Hierarchical Clustering.
+
+\textbf{Solution:} **Agglomerative** (Bottom-up): Starts with every point as a cluster and merges closest pairs until one cluster remains. \\ **Divisive** (Top-down): Starts with one cluster containing all points and recursively splits them.
+
+\subsection*{Question 88 (Unsupervised)}
+\textbf{Problem:} What are the two key hyperparameters of DBSCAN? How does setting them too high or too low affect the result?
+
+\textbf{Solution:} 1. **Epsilon ($\epsilon$)**: Distance radius. 2. **MinPts**: Min points to form a dense region. \\ Small $\epsilon$: Many points become noise (sparse). Large $\epsilon$: Clusters merge. \\ Large MinPts: Harder to form clusters (more noise). Small MinPts: More clusters, noise gets included.
+
+\subsection*{Question 89 (Unsupervised)}
+\textbf{Problem:} Why does K-Means fail to cluster non-convex shapes (like concentric circles/donuts)?
+
+\textbf{Solution:} K-Means uses Euclidean distance and assumes spherical clusters. It creates linear separation boundaries (Voronoi cells). It cannot capture the geometry of a ring surrounding a central blob.
+
+\subsection*{Question 90 (Unsupervised)}
+\textbf{Problem:} In Hierarchical Clustering, what is 'Single Linkage' vs 'Complete Linkage'? Which one is prone to the 'chaining effect'?
+
+\textbf{Solution:} **Single Linkage**: Distance between clusters is the min distance between any two points in them. Prone to **Chaining** (long, thin clusters). \\ **Complete Linkage**: Distance is the max distance between points. Produces compact clusters.
+
+\section{Model Evaluation}
+\subsection*{Question 91 (Evaluation)}
+\textbf{Problem:} Confusion Matrix: TP=40, FN=10, FP=20, TN=130. Calculate Accuracy, Precision, Recall, F1.
+
+\textbf{Solution:} Accuracy = 170/200 = 0.85. \\ Precision = 40/60 = 0.67. \\ Recall = 40/50 = 0.8. \\ F1 = $2 \cdot (0.67 \cdot 0.8) / (0.67 + 0.8) \approx 0.73$.
+
+\subsection*{Question 92 (Evaluation)}
+\textbf{Problem:} Imbalanced data (0.1% fraud). Why is accuracy bad? What is better?
+
+\textbf{Solution:} Accuracy is bad because a dummy 'All Neg' model gets 99.9% accuracy but fails the task. Better: **Recall** (catch fraud), **Precision**, **F1-Score**, **AUC-PR**.
+
+\subsection*{Question 93 (Evaluation)}
+\textbf{Problem:} Explain Bias-Variance Tradeoff.
+
+\textbf{Solution:} Bias: Error from assumptions (underfitting). Variance: Error from sensitivity to training data (overfitting). Complexity increases Variance, decreases Bias.
+
+\subsection*{Question 94 (Evaluation)}
+\textbf{Problem:} ROC Calculation from Probabilities.
+
+\textbf{Solution:} Thresholding probabilities to get TP/FP counts and plotting TPR vs FPR.
+
+\subsection*{Question 95 (Evaluation)}
+\textbf{Problem:} Why K-Fold CV vs Single Split?
+
+\textbf{Solution:} Single split is sensitive to random partition (bias). K-Fold uses all data for training and testing, giving a robust estimate of performance variance.
+
+\subsection*{Question 96 (Evaluation)}
+\textbf{Problem:} Calculate the Macro-F1 and Micro-F1 scores for a 3-class problem. Class A: TP=10, FP=2, FN=5. Class B: TP=20, FP=5, FN=10. Class C: TP=50, FP=10, FN=10.
+
+\textbf{Solution:}
+\textbf{Class-wise Metrics:}
+\begin{itemize}
+    \item Class A: $P = 10/12 \approx 0.83$, $R = 10/15 \approx 0.67$. $F1 = 2(0.83 \cdot 0.67)/(0.83+0.67) \approx 0.74$.
+    \item Class B: $P = 20/25 = 0.80$, $R = 20/30 \approx 0.67$. $F1 = 2(0.8 \cdot 0.67)/(0.8+0.67) \approx 0.73$.
+    \item Class C: $P = 50/60 \approx 0.83$, $R = 50/60 \approx 0.83$. $F1 \approx 0.83$.
+\end{itemize}
+\textbf{Macro-F1:} Average of class F1 scores. $(0.74 + 0.73 + 0.83) / 3 \approx \mathbf{0.77}$. \\
+\textbf{Micro-F1:} Aggregate counts. Total TP = $10+20+50 = 80$. Total FP = $2+5+10 = 17$. Total FN = $5+10+10 = 25$. \\
+Micro P = $80 / (80+17) \approx 0.825$. Micro R = $80 / (80+25) \approx 0.762$. \\
+Micro F1 = $2(0.825 \cdot 0.762) / (0.825 + 0.762) \approx \mathbf{0.79}$.
+
+\subsection*{Question 97 (Evaluation)}
+\textbf{Problem:} What is the ROC AUC (Area Under Curve)? If a model has AUC = 0.5, what does it mean?
+
+\textbf{Solution:} AUC is the probability that the model ranks a random positive example higher than a random negative example. AUC=0.5 means the model is no better than **Random Guessing**.
+
+\subsection*{Question 98 (Evaluation)}
+\textbf{Problem:} Explain the Kappa Statistic (Cohen's Kappa). When is it useful?
+
+\textbf{Solution:} Kappa measures inter-rater agreement or classifier accuracy corrected for chance agreement. It is useful for imbalanced datasets to see if the model is actually performing better than just guessing based on class frequency.
+
+\subsection*{Question 99 (Evaluation)}
+\textbf{Problem:} In a medical test for a deadly disease, is High Precision or High Recall more important? Why?
+
+\textbf{Solution:} **High Recall** is usually more important. We don't want to miss any sick patients (False Negatives are costly/fatal). We can tolerate some False Positives (Low Precision) which can be ruled out by further testing.
+
+\subsection*{Question 100 (Evaluation)}
+\textbf{Problem:} What is 'Stratified' K-Fold Cross Validation? When should you use it?
+
+\textbf{Solution:} Stratified K-Fold ensures that each fold has approximately the same percentage of samples of each target class as the complete set. It is essential for **Imbalanced Class** problems to prevent some folds from having zero positive examples.
+
+\section{Emerging Requirements}
+\subsection*{Question 101 (Emerging)}
+\textbf{Problem:} Bias in loan approval (30% higher denial for minority). Type of bias? Mitigation?
+
+\textbf{Solution:} Historical/Algorithmic Bias. Mitigation: Resampling training data, modifying loss function (re-weighting), post-processing thresholds.
+
+\subsection*{Question 102 (Emerging)}
+\textbf{Problem:} Why is interpretability important in medical diagnosis? Describe SHAP.
+
+\textbf{Solution:} Trust/Accountability. SHAP uses game theory (Shapley values) to assign feature importance contribution to individual predictions.
+
+\subsection*{Question 103 (Emerging)}
+\textbf{Problem:} Adversarial Attack (Panda -> Gibbon). Why robust?
+
+\textbf{Solution:} Small noise fools model. Critical for self-driving cars (safety) to prevent attacks on traffic sign recognition.
+
+\subsection*{Question 104 (Emerging)}
+\textbf{Problem:} Deploying large Transformer model. Strategies?
+
+\textbf{Solution:} 1. **Pruning/Quantization** (reduce size). 2. **Knowledge Distillation** (Student-Teacher).
+
+\subsection*{Question 105 (Emerging)}
+\textbf{Problem:} Fairness through Unawareness vs Demographic Parity.
+
+\textbf{Solution:} Unawareness (removing race column) fails due to proxies (zip code). Demographic Parity forces equal outcome rates.
+
+\subsection*{Question 106 (Emerging)}
+\textbf{Problem:} What is Differential Privacy in the context of Machine Learning?
+
+\textbf{Solution:} Differential Privacy ensures that the output of a model (or query) does not significantly reveal whether any specific individual's data was included in the training set. It typically adds noise to the data or gradients to mask individual contributions.
+
+\subsection*{Question 107 (Emerging)}
+\textbf{Problem:} Explain the concept of 'Model Drift' (or Concept Drift). How can you detect it?
+
+\textbf{Solution:} Model Drift occurs when the statistical properties of the target variable or input features change over time, degrading model performance. Detection: Monitoring performance metrics (accuracy decay) or statistical distribution tests (e.g., KS test) on incoming data.
+
+\subsection*{Question 108 (Emerging)}
+\textbf{Problem:} What is Federated Learning?
+
+\textbf{Solution:} Federated Learning is a decentralized approach where the model is trained across multiple devices (clients) holding local data samples, without exchanging them. Only model updates (gradients) are sent to a central server to aggregate.
+
+\subsection*{Question 109 (Emerging)}
+\textbf{Problem:} Differentiate between LIME and SHAP as explainability methods.
+
+\textbf{Solution:} **LIME** (Local Interpretable Model-agnostic Explanations) approximates the model locally with a linear model around the prediction. **SHAP** (Shapley Additive exPlanations) is based on game theory and provides consistent global/local attribution values with theoretical guarantees.
+
+\subsection*{Question 110 (Emerging)}
+\textbf{Problem:} What is Data Poisoning in ML security?
+
+\textbf{Solution:} Data Poisoning is an attack where the adversary injects malicious data into the training set (e.g., mislabeled samples) to compromise the model's integrity or create backdoors during training.
+
+\end{document}
